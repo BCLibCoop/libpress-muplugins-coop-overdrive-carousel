@@ -4,32 +4,55 @@
 *	@package: OverDrive	
 *	@comment: open auth connection library
 *	@author: Erik Stainsby / Roaring Sky Software
-*	@copyright: BC Libraries Coop, 2013
+*	@copyright: BC Libraries Coop, 2015
 **/
 
 if ( ! class_exists( 'ODAuth' )) :
 	
 class ODauth {
 
-	var $libID = '1228';
-	var $clientkey = '***REMOVED***';
-	var $clientsecret = '***REMOVED***';
+	var $libID;
+	var $clientkey;
+	var $clientsecret;
+
+	//don't set these until init where a check is made with get_site_url
 	var $auth_uri = 'https://oauth.overdrive.com/token';
 	var $account_uri = 'http://api.overdrive.com/v1/libraries';
 	
 	public function __construct() {
 		add_action( 'init', array( &$this, '_init' ));
+		$siteurl = "fortnelson.bc.libraries.coop"; //later get_siteurl
+		error_log("\nSite URL was instantiated with: " . $siteurl . "\n");
+
+		preg_match('%[a-z]*\.([a-z][a-z])\.libraries.coop%', $siteurl, $matches);
+		error_log("\nMatches was " . $matches[1] . "\n");
+
+	//$provsub = $matches[1];
+
+
+	if ($matches[1] === 'mb') {
+		$this->libID = '1326';
+		$this->clientkey = '***REMOVED***';
+		$this->clientsecret = '***REMOVED***';
+	}
+
+	else { //bc
+		error_log("\nhit BC else condition\n");
+		$this->libID = '1228';
+		$this->clientkey = '***REMOVED***';
+		$this->clientsecret = '***REMOVED***';
+	}
 	
 	}
 	
 	public function _init() {
-	
+
 		error_log( __FUNCTION__ );
 	}
 	
 	
 	public function get_token() {
-	
+		error_log("\nLibID is: " . $libID . "\n");
 		$hash = base64_encode($this->clientkey.':'.$this->clientsecret);
 		$authheader = array('Authorization: Basic '.$hash,
 							'Content-Type: application/x-www-form-urlencoded;charset=UTF-8' );
@@ -98,17 +121,17 @@ class ODauth {
 	//	return $json;
 
 		$r = json_decode( $json );
-		
 		$out = array();
 		
 		$out[] = '<div class="carousel-container">';
 		$out[] = '<a class="carousel-buttons prev" href="#">left</a>';
         $out[] = '<div class="carousel-viewport">';
 		$out[] = '<ul class="carousel-tray">';
+		
 		foreach( $r->products as $p ) {
 			$out[] = '<li class="carousel-item">';
 			$out[] = sprintf('<a href="http://%s">',$p->contentDetails[0]->href);
-			$out[] = sprintf('<img src="%s">',$p->images->thumbnail->href);
+			$out[] = sprintf('<img src="%s">',$p->images->thumbnail->href->cover300wide);
 			$out[] = '<div class="carousel-item-assoc">';
 			$out[] = sprintf('<span class="carousel-item-title">%s</span><br/><span class="carousel-item-author">%s</span></a>',$p->title, $p->primaryCreator->name);
 			$out[] = '</div><!-- .carousel-item-assoc -->';

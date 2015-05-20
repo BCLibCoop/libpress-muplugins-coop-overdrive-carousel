@@ -53,7 +53,8 @@
 	float: left; 
 	margin: 0 20px 0 0; 
 	padding: 1px; 
-	height: 230px; 
-	border: thin solid #ddd; 
+	height: 235px; 
+	/*border: thin solid #ddd; */
 	width: 100px;
+	overflow: hidden;
 }

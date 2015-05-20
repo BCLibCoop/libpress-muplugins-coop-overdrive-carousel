@@ -4,14 +4,14 @@
 *	@package: OverDrive	
 *	@comment: Driver for OAuth connection and API searching
 *	@author: Erik Stainsby / Roaring Sky Software
-*	@copyright: BC Libraries Coop, 2013
+*	@copyright: BC Libraries Coop, 2015
 **/
 
 /**
  * Plugin Name: OverDrive carousel widget
  * Description: Carousel of new titles on OverDrive. NETWORK ACTIVATE.
  * Author: Erik Stainsby, Roaring Sky Software
- * Version: 0.1.3
+ * Version: 0.1.5
  **/
 
 
@@ -82,9 +82,26 @@ class Overdrive_Carousel {
 		
 		$token = $odauth->get_token();
 		$link = $odauth->get_product_link( $token );
+		$dwell = 800;
+		$transition = 400;
 	
 		// returning HTML currently 
-		$out[] = $odauth->get_newest_n( $token, $link, $cover_count );
+
+		//if ( false === ( $value = get_site_transient('value') ) ) {
+			$out[] = $odauth->get_newest_n( $token, $link, $cover_count );
+		//}
+
+		$out[] = '<script type="text/javascript">';
+		$out[] = 'jQuery().ready(function($) { ';
+		$out[] = '   $(".carousel-container").tinycarousel({ ';
+		$out[] = '       display: 1, ';
+		$out[] = '       controls: true, ';
+		$out[] = '       interval: true, ';
+		$out[] = '       intervalTime: '.$dwell.', ';
+		$out[] = '       duration:     '.$transition.' ';
+		$out[] = '	}) ';
+		$out[] = '}); ';
+		$out[] = '</script>';
 		
 			
 		return implode( "\n", $out );
@@ -117,7 +134,6 @@ class Overdrive_Carousel {
 		if( empty($transition)) {
 			$transition = 400;
 		}
-		
 		
 		$token = $odauth->get_token();
 		$link = $odauth->get_product_link( $token );
