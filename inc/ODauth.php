@@ -124,22 +124,28 @@ class ODauth {
 		$out = array();
 		
 		$out[] = '<div class="carousel-container">';
-		$out[] = '<a class="carousel-buttons prev" href="#">left</a>';
-        $out[] = '<div class="carousel-viewport">';
+    $out[] = '<div class="carousel-viewport">';
 		$out[] = '<ul class="carousel-tray">';
-		
+		$i = 1;
 		foreach( $r->products as $p ) {
+			if ($i == 1) {
+			//echo print_r($p);
+		}
 			$out[] = '<li class="carousel-item">';
 			$out[] = sprintf('<a href="http://%s">',$p->contentDetails[0]->href);
-			$out[] = sprintf('<img src="%s">',$p->images->thumbnail->href->cover300wide);
+			$out[] = sprintf('<img src="%s">',$p->images->cover150Wide->href);
 			$out[] = '<div class="carousel-item-assoc">';
 			$out[] = sprintf('<span class="carousel-item-title">%s</span><br/><span class="carousel-item-author">%s</span></a>',$p->title, $p->primaryCreator->name);
 			$out[] = '</div><!-- .carousel-item-assoc -->';
 			$out[] = '</li>';
+			$i++;
 		}
 		$out[] = '</ul><!-- .carousel-tray -->';
 		$out[] = '</div><!-- .carousel-viewport -->';
+		$out[] = '<div class="carousel-button-box">';
+		$out[] = '<a class="carousel-buttons prev" href="#">left</a>';
 		$out[] = '<a class="carousel-buttons next" href="#">right</a>';
+		$out[] = '</div><!-- .carousel-button-box -->';
 		$out[] = '</div><!-- .carousel-container -->';
 
 		return implode("\n",$out);
