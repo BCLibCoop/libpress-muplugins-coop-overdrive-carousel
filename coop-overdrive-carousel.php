@@ -85,24 +85,27 @@ class Overdrive_Carousel {
 
 		error_log("Province was: ". $odauth->province);
 
-		//Start making OverDrive API calls - 1. Generate token, 2. Use token to get_product_link, 3. Use both to grab covers and data
+		/*Start making OverDrive API calls:
+		 1. Generate token
+		 2. Use token to get_product_link
+		 3. Use both to grab covers and data
+		 */
+
 		//If the transient does not exist or is expired, refresh the data
     if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province ) ) ) {
-	
 			$token = $odauth->get_token();
-			error_log("Token: " . $token);
 
 			$link = $odauth->get_product_link( $token );
 			
 			$newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
 
-    	set_transient( 'coop_overdrive_daily_results' . $odauth->province, $newest_data, 60 * HOUR_IN_SECONDS );
-    	error_log("\nTransient OD DATA EXPIRED and we made an API call\n");
+    	set_transient( 'coop_overdrive_daily_results' . $odauth->province, $newest_data, WEEK_IN_SECONDS );
+    	error_log("\nTransient OD DATA EXPIRED for " . $odauth->province . " and we made an API call\n");
 		}
 		
 		else { //Otherwise refresh from transient data and make no calls.
 			$newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province );
-			error_log("\nCurrently using CACHED OD DATA\n");
+			error_log("\nCurrently using CACHED OD DATA for " . $odauth->province . "\n");
 		}
 
 		$out[] = $newest_data;

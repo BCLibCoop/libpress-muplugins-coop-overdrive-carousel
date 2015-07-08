@@ -22,30 +22,27 @@ class ODauth {
 	
 	public function __construct() {
 		add_action( 'init', array( &$this, '_init' ));
-		//$siteurl = "fortnelson.bc.libraries.coop"; //later get_siteurl
-		$siteurl = site_url();
-		error_log("\nSite URL was instantiated with: " . $siteurl . "\n");
-		$this->province = 'Test';
-		preg_match('%[a-z]*\.([a-z][a-z])\.libraries.coop%', $siteurl, $matches);
-		//error_log("\nMatches was " . $matches[1] . "\n");
+		
+		$shortcode = get_blog_option( get_current_blog_id(), '_coop_sitka_lib_shortname');
 
-	$provsub = $matches[1];
+		preg_match('%(^[A-Z]{1})%', $shortcode, $matches);
+		$provsub = $matches[1];
 
 
-	if ($matches[1] === 'mb') {
-		$province = 'mb';
-		$this->libID = '1326';
-		$this->clientkey = '***REMOVED***';
-		$this->clientsecret = '***REMOVED***';
-	}
+		if ($provsub === 'M' || $provsub === 'S') {
+			$this->province = 'mb';
+			$this->libID = '1326';
+			$this->clientkey = '***REMOVED***';
+			$this->clientsecret = '***REMOVED***';
+		}
 
-	else { //bc
-		error_log("\nhit BC else condition\n");
-		$province = 'bc';
-		$this->libID = '1228';
-		$this->clientkey = '***REMOVED***';
-		$this->clientsecret = '***REMOVED***';
-	}
+		else { //BC or not applicable
+			
+			$this->province = 'bc';
+			$this->libID = '1228';
+			$this->clientkey = '***REMOVED***';
+			$this->clientsecret = '***REMOVED***';
+		}
 	
 	}
 	
