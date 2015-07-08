@@ -14,6 +14,7 @@ class ODauth {
 	var $libID;
 	var $clientkey;
 	var $clientsecret;
+	public $province; //access this from outside for transient
 
 	//don't set these until init where a check is made with get_site_url
 	var $auth_uri = 'https://oauth.overdrive.com/token';
@@ -21,16 +22,18 @@ class ODauth {
 	
 	public function __construct() {
 		add_action( 'init', array( &$this, '_init' ));
-		$siteurl = "fortnelson.bc.libraries.coop"; //later get_siteurl
+		//$siteurl = "fortnelson.bc.libraries.coop"; //later get_siteurl
+		$siteurl = site_url();
 		error_log("\nSite URL was instantiated with: " . $siteurl . "\n");
-
+		$this->province = 'Test';
 		preg_match('%[a-z]*\.([a-z][a-z])\.libraries.coop%', $siteurl, $matches);
-		error_log("\nMatches was " . $matches[1] . "\n");
+		//error_log("\nMatches was " . $matches[1] . "\n");
 
-	//$provsub = $matches[1];
+	$provsub = $matches[1];
 
 
 	if ($matches[1] === 'mb') {
+		$province = 'mb';
 		$this->libID = '1326';
 		$this->clientkey = '***REMOVED***';
 		$this->clientsecret = '***REMOVED***';
@@ -38,6 +41,7 @@ class ODauth {
 
 	else { //bc
 		error_log("\nhit BC else condition\n");
+		$province = 'bc';
 		$this->libID = '1228';
 		$this->clientkey = '***REMOVED***';
 		$this->clientsecret = '***REMOVED***';
@@ -47,12 +51,12 @@ class ODauth {
 	
 	public function _init() {
 
-		error_log( __FUNCTION__ );
+		//error_log( __FUNCTION__ );
 	}
 	
 	
 	public function get_token() {
-		error_log("\nLibID is: " . $libID . "\n");
+
 		$hash = base64_encode($this->clientkey.':'.$this->clientsecret);
 		$authheader = array('Authorization: Basic '.$hash,
 							'Content-Type: application/x-www-form-urlencoded;charset=UTF-8' );
@@ -88,7 +92,7 @@ class ODauth {
 		
 		curl_setopt($ch, CURLOPT_HTTPGET, 1);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token, 'X-Forwarded-For: '.$userip) );
-		curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v1' );
+		curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2' );
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
 		
 		$json = curl_exec($ch);
@@ -105,30 +109,29 @@ class ODauth {
 	
 	
 	public function get_newest_n( $token, $link, $n ) {
-		
-		$ch = curl_init( $link['url'] .'/?limit='.$n.'&offset=0&sort=dateadded:desc' );
-		
-		$userip = $_SERVER['REMOTE_ADDR'];
-		
-		curl_setopt($ch, CURLOPT_HTTPGET, 1);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token, 'X-Forwarded-For: '.$userip) );
-		curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v1' );
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-		
-		$json = curl_exec($ch);
-		curl_close($ch);
 
-	//	return $json;
+			$ch = curl_init( $link['url'] .'/?limit='.$n.'&offset=0&sort=dateadded:desc' );
+			
+			$userip = $_SERVER['REMOTE_ADDR'];
+			
+			curl_setopt($ch, CURLOPT_HTTPGET, 1);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token, 'X-Forwarded-For: '.$userip) );
+			curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2' );
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+			
+			$json = curl_exec($ch);
+			curl_close($ch);
 
-		$r = json_decode( $json );
+			$r = json_decode( $json );
+
 		$out = array();
-		
+			
 		$out[] = '<div class="carousel-container">';
-    $out[] = '<div class="carousel-viewport">';
+	  $out[] = '<div class="carousel-viewport">';
 		$out[] = '<ul class="carousel-tray">';
 
 		foreach( $r->products as $p ) {
-		
+			
 			$out[] = '<li class="carousel-item">';
 			$out[] = sprintf('<a href="http://%s">',$p->contentDetails[0]->href);
 			$out[] = sprintf('<img src="%s">',$p->images->cover150Wide->href);
@@ -137,7 +140,7 @@ class ODauth {
 			$out[] = '</div><!-- .carousel-item-assoc -->';
 			$out[] = '</li>';
 		}
-		
+
 		$out[] = '</ul><!-- .carousel-tray -->';
 		$out[] = '</div><!-- .carousel-viewport -->';
 		$out[] = '<div class="carousel-button-box">';
@@ -147,7 +150,6 @@ class ODauth {
 		$out[] = '</div><!-- .carousel-container -->';
 
 		return implode("\n",$out);
-		
 	}
 	
 }
