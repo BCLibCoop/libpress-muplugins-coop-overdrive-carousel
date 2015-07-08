@@ -66,6 +66,13 @@
 
 span.carousel-item-title, span.carousel-item-author {
 	font-size: 0.8em;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+span.carousel-item-author {
+	font-style: italic;
 }
 
 div.carousel-item-assoc {
