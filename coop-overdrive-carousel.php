@@ -4,14 +4,14 @@
 *	@package: OverDrive	
 *	@comment: Driver for OAuth connection and API searching
 *	@author: Erik Stainsby / Roaring Sky Software
-*	@copyright: BC Libraries Coop, 2013
+*	@copyright: BC Libraries Coop, 2015
 **/
 
 /**
  * Plugin Name: OverDrive carousel widget
  * Description: Carousel of new titles on OverDrive. NETWORK ACTIVATE.
  * Author: Erik Stainsby, Roaring Sky Software
- * Version: 0.1.3
+ * Version: 0.1.5
  **/
 
 
@@ -79,12 +79,48 @@ class Overdrive_Carousel {
 		
 		
 		$out = array();
+
+		$dwell = 800;
+		$transition = 400;
+
+		error_log("Province was: ". $odauth->province);
+
+		/*Start making OverDrive API calls:
+		 1. Generate token
+		 2. Use token to get_product_link
+		 3. Use both to grab covers and data
+		 */
+
+		//If the transient does not exist or is expired, refresh the data
+    if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province ) ) ) {
+			$token = $odauth->get_token();
+
+			$link = $odauth->get_product_link( $token );
+			
+			$newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
+
+    	set_transient( 'coop_overdrive_daily_results' . $odauth->province, $newest_data, WEEK_IN_SECONDS );
+    	error_log("\nTransient OD DATA EXPIRED for " . $odauth->province . " and we made an API call\n");
+		}
 		
-		$token = $odauth->get_token();
-		$link = $odauth->get_product_link( $token );
-	
-		// returning HTML currently 
-		$out[] = $odauth->get_newest_n( $token, $link, $cover_count );
+		else { //Otherwise refresh from transient data and make no calls.
+			$newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province );
+			error_log("\nCurrently using CACHED OD DATA for " . $odauth->province . "\n");
+		}
+
+		$out[] = $newest_data;
+
+		$out[] = '<script type="text/javascript">';
+		$out[] = 'jQuery().ready(function($) { ';
+		$out[] = '   $(".carousel-container").tinycarousel({ ';
+		$out[] = '       display: 1, ';
+		$out[] = '       controls: true, ';
+		$out[] = '       interval: true, ';
+		$out[] = '       intervalTime: '.$dwell.', ';
+		$out[] = '       duration:     '.$transition.' ';
+		$out[] = '	}) ';
+		$out[] = '}); ';
+		$out[] = '</script>';
 		
 			
 		return implode( "\n", $out );
@@ -106,7 +142,7 @@ class Overdrive_Carousel {
 		$transition = get_option('coop-od-transition');
 		
 		if( empty($heading)) {
-			$heading = 'Fresh eBooks &amp; audioBooks';
+			$heading = 'Fresh eBooks/Audio';
 		}
 		if( empty($cover_count)) {
 			$cover_count = 20;
@@ -118,10 +154,27 @@ class Overdrive_Carousel {
 			$transition = 400;
 		}
 		
-		
-		$token = $odauth->get_token();
-		$link = $odauth->get_product_link( $token );
-		
+		/*Start making OverDrive API calls:
+		 1. Generate token
+		 2. Use token to get_product_link
+		 3. Use both to grab covers and data
+		 */
+
+		//If the transient does not exist or is expired, refresh the data
+		if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province ) ) ) {
+
+			$token = $odauth->get_token();
+			$link = $odauth->get_product_link( $token );
+			$newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
+
+			set_transient( 'coop_overdrive_daily_results' . $odauth->province, $newest_data, 60 * HOUR_IN_SECONDS );
+
+		}
+
+		else { //Otherwise refresh from transient data and make no calls.
+			$newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province );
+		}
+
 		$out = array();
 		
 		extract($args);
@@ -143,7 +196,7 @@ class Overdrive_Carousel {
 		$out[] = $after_title;
 		
 		// returning HTML currently 
-		$out[] = $odauth->get_newest_n( $token, $link, $cover_count );
+		$out[] = $newest_data;
 		
 		$out[] = $after_widget;
 		
