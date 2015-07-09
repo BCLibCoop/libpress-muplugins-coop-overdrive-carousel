@@ -83,7 +83,7 @@ class Overdrive_Carousel {
 		$dwell = 800;
 		$transition = 400;
 
-		error_log("Province was: ". $odauth->province);
+		//error_log("Province was: ". $odauth->province);
 
 		/*Start making OverDrive API calls:
 		 1. Generate token
@@ -92,7 +92,7 @@ class Overdrive_Carousel {
 		 */
 
 		//If the transient does not exist or is expired, refresh the data
-    if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province ) ) ) {
+		if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province ) ) ) {
 			$token = $odauth->get_token();
 
 			$link = $odauth->get_product_link( $token );
