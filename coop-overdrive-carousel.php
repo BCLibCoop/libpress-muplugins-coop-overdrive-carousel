@@ -190,7 +190,7 @@ class Overdrive_Carousel {
 		$out[] = $before_widget;
 		
 		$out[] = $before_title;
-		$out[] = '<a href="http://downloads.bclibrary.ca/">';
+		$out[] = '<a href="//downloads.bclibrary.ca/">';
 		$out[] = $heading;
 		$out[] = '</a>';
 		$out[] = $after_title;
