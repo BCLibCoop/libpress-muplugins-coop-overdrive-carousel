@@ -18,7 +18,7 @@ class ODauth {
 
 	//don't set these until init where a check is made with get_site_url
 	var $auth_uri = 'https://oauth.overdrive.com/token';
-	var $account_uri = 'http://api.overdrive.com/v1/libraries';
+	var $account_uri = 'https://api.overdrive.com/v1/libraries';
 	
 	public function __construct() {
 		add_action( 'init', array( &$this, '_init' ));
