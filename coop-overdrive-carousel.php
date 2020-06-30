@@ -21,7 +21,7 @@ class Overdrive_Carousel {
 
 	public function __construct() {
 	
-		add_action( 'init', array( &$this, '_init' ));
+		add_action( 'wp_loaded', array( &$this, '_init' ));
 	
 	}
 	
@@ -96,16 +96,16 @@ class Overdrive_Carousel {
 			$token = $odauth->get_token();
 
 			$link = $odauth->get_product_link( $token );
-			
+
 			$newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
 
     	set_transient( 'coop_overdrive_daily_results' . $odauth->province, $newest_data, WEEK_IN_SECONDS );
-    	error_log("\nTransient OD DATA EXPIRED for " . $odauth->province . " and we made an API call\n");
+    	$msg = "Transient OD DATA EXPIRED for {$odauth->province} and we made an API call.";
 		}
-		
+
 		else { //Otherwise refresh from transient data and make no calls.
 			$newest_data = get_transient( 'coop_overdrive_daily_results' . $odauth->province );
-			error_log("\nCurrently using CACHED OD DATA for " . $odauth->province . "\n");
+			$msg = "Currently using CACHED OD DATA for {$odauth->province}";
 		}
 
 		$out[] = $newest_data;
@@ -120,17 +120,17 @@ class Overdrive_Carousel {
 		$out[] = '       duration:     '.$transition.' ';
 		$out[] = '	}) ';
 		$out[] = '}); ';
+    if (! empty($msg) )$out[]= "console.log('$msg')";
 		$out[] = '</script>';
-		
-			
+
 		return implode( "\n", $out );
 	}
-	
-	
+
+
 	public function coop_od_widget($args) {
-		
+
 		// error_log(__FUNCTION__);
-		
+
 		global $odauth;
 		if( ! isset($odauth)) {
 			die('no OD auth library found');
@@ -190,7 +190,7 @@ class Overdrive_Carousel {
 		$out[] = $before_widget;
 		
 		$out[] = $before_title;
-		$out[] = '<a href="http://downloads.bclibrary.ca/">';
+		$out[] = '<a href="//downloads.bclibrary.ca/">';
 		$out[] = $heading;
 		$out[] = '</a>';
 		$out[] = $after_title;

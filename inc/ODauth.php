@@ -16,12 +16,12 @@ class ODauth {
 	var $clientsecret;
 	public $province; //access this from outside for transient
 
-	//don't set these until init where a check is made with get_site_url
+	//don't set these until wp_loadded where a check is made with get_site_url
 	var $auth_uri = 'https://oauth.overdrive.com/token';
 	var $account_uri = 'https://api.overdrive.com/v1/libraries';
 	
 	public function __construct() {
-		add_action( 'init', array( &$this, '_init' ));
+		add_action( 'wp_loaded', array( &$this, '_init' ));
 		
 		$shortcode = get_blog_option( get_current_blog_id(), '_coop_sitka_lib_shortname');
 
