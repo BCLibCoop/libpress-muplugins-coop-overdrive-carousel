@@ -21,7 +21,7 @@ class Overdrive_Carousel {
 
 	public function __construct() {
 	
-		add_action( 'init', array( &$this, '_init' ));
+		add_action( 'wp_loaded', array( &$this, '_init' ));
 	
 	}
 	
