@@ -22,7 +22,12 @@ class ODauth {
 	
 	public function __construct() {
 		add_action( 'wp_loaded', array( &$this, '_init' ));
-		
+
+	}
+	
+	public function _init() {
+
+		//error_log( __FUNCTION__ );
 		$shortcode = get_blog_option( get_current_blog_id(), '_coop_sitka_lib_shortname');
 
 		preg_match('%(^[A-Z]{1})%', $shortcode, $matches);
@@ -37,21 +42,14 @@ class ODauth {
 		}
 
 		else { //BC or not applicable
-			
+
 			$this->province = 'bc';
 			$this->libID = '1228';
 			$this->clientkey = '***REMOVED***';
 			$this->clientsecret = '***REMOVED***';
 		}
-	
 	}
-	
-	public function _init() {
 
-		//error_log( __FUNCTION__ );
-	}
-	
-	
 	public function get_token() {
 
 		$hash = base64_encode($this->clientkey.':'.$this->clientsecret);
@@ -155,6 +153,7 @@ class ODauth {
 if ( ! isset( $odauth ) ) {
 	global $odauth; 
 	$odauth = new ODauth();
+	$odauth->_init();
 }
 	
 endif; /* ! class_exists */
