@@ -153,7 +153,6 @@ class ODauth {
 if ( ! isset( $odauth ) ) {
 	global $odauth; 
 	$odauth = new ODauth();
-	$odauth->_init();
 }
 	
 endif; /* ! class_exists */
