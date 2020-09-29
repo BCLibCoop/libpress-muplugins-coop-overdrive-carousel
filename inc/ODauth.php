@@ -21,7 +21,7 @@ class ODauth {
 	var $account_uri = 'https://api.overdrive.com/v1/libraries';
 
 	public function __construct() {
-		add_action( 'wp_loaded', array( &$this, '_init' ));
+		add_action( 'wp_loaded', array( &$this, '_init' ), 12);
 
 	}
 
