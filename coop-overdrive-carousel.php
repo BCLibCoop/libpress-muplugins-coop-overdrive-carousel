@@ -27,11 +27,17 @@ class Overdrive_Carousel {
 
   public function _init() {
 
-    add_shortcode( 'overdrive_carousel', array( &$this, 'coop_od_shortcode' ) );
-    wp_register_sidebar_widget('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget'));
-    wp_register_widget_control('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget_control'));
-
+    //Prepare the ODauth dependency.
     require_once( 'inc/ODauth.php' );
+    $odauth = new ODauth();
+    $odauth->_init();
+    $that = $this;
+
+    //Use a closure to pass in class + ODauth instance that calls the shortcode method
+    add_shortcode( 'overdrive_carousel', function( $atts ) use ($that, $odauth) { return $that->coop_od_shortcode($atts, $odauth); } );
+    wp_register_sidebar_widget('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget'), $options = array(), $params = array($odauth) );
+
+    wp_register_widget_control('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget_control'));
 
     if( !is_admin()) {
       wp_register_style( 'coop-overdrive',   plugins_url( '/css/overdrive.css', __FILE__ ), false );
@@ -63,11 +69,10 @@ class Overdrive_Carousel {
   }
 
 
-  public function coop_od_shortcode ( $atts ) {
+  public function coop_od_shortcode ( $atts, $odauth ) {
 
     extract( shortcode_atts( array(), $atts ));
 
-    global $odauth;
     if( ! isset($odauth)) {
       die('no OD auth library found');
     }
@@ -127,11 +132,11 @@ class Overdrive_Carousel {
   }
 
 
-  public function coop_od_widget($args) {
+  public function coop_od_widget($args, $params) {
 
     // error_log(__FUNCTION__);
 
-    global $odauth;
+    $odauth = reset($params);
     if( ! isset($odauth)) {
       die('no OD auth library found');
     }
@@ -195,7 +200,7 @@ class Overdrive_Carousel {
     $out[] = '</a>';
     $out[] = $after_title;
 
-    // returning HTML currently 
+    // returning HTML currently
     $out[] = $newest_data;
 
     $out[] = $after_widget;
