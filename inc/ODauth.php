@@ -1,14 +1,14 @@
 <?php defined('ABSPATH') || die(-1);
 
 /**
-*	@package: OverDrive	
+*	@package: OverDrive
 *	@comment: open auth connection library
 *	@author: Erik Stainsby / Roaring Sky Software
 *	@copyright: BC Libraries Coop, 2015
 **/
 
 if ( ! class_exists( 'ODAuth' )) :
-	
+
 class ODauth {
 
 	var $libID;
@@ -19,12 +19,12 @@ class ODauth {
 	//don't set these until wp_loadded where a check is made with get_site_url
 	var $auth_uri = 'https://oauth.overdrive.com/token';
 	var $account_uri = 'https://api.overdrive.com/v1/libraries';
-	
+
 	public function __construct() {
 		add_action( 'wp_loaded', array( &$this, '_init' ));
 
 	}
-	
+
 	public function _init() {
 
 		//error_log( __FUNCTION__ );
@@ -56,77 +56,77 @@ class ODauth {
 		$authheader = array('Authorization: Basic '.$hash,
 							'Content-Type: application/x-www-form-urlencoded;charset=UTF-8' );
 		$bodydata = 'grant_type=client_credentials';
-				
-		$ch = curl_init( $this->auth_uri ); 
-		
-		curl_setopt($ch, CURLOPT_POST, 1);	
+
+		$ch = curl_init( $this->auth_uri );
+
+		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $authheader );
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $bodydata);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
 		$json = curl_exec($ch);
 		curl_close($ch);
-	
+
 	//	error_log( $json );
-		
+
 		$data = json_decode( $json );
 		$token = $data->access_token;
-		
+
 	//	error_log( $token );
-		
+
 		return $token;
-	 
+
 	}
-	
+
 	public function get_product_link( $token ) {
-		
+
 		$ch = curl_init( $this->account_uri .'/'. $this->libID );
-		
+
 		$userip = $_SERVER['REMOTE_ADDR'];
-		
+
 		curl_setopt($ch, CURLOPT_HTTPGET, 1);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token, 'X-Forwarded-For: '.$userip) );
 		curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2' );
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-		
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
 		$json = curl_exec($ch);
 		curl_close($ch);
-		
+
 		$account = json_decode( $json );
-		
+
 		$url = $account->links->products->href;
-		$type = $account->links->products->type; 
-		
+		$type = $account->links->products->type;
+
 		return array( 'url'=>$url, 'type'=>$type );
-		
+
 	}
-	
-	
+
+
 	public function get_newest_n( $token, $link, $n ) {
 
 			$ch = curl_init( $link['url'] .'/?limit='.$n.'&offset=0&sort=dateadded:desc' );
-			
+
 			$userip = $_SERVER['REMOTE_ADDR'];
-			
+
 			curl_setopt($ch, CURLOPT_HTTPGET, 1);
 			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token, 'X-Forwarded-For: '.$userip) );
 			curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2' );
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-			
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
 			$json = curl_exec($ch);
 			curl_close($ch);
 
 			$r = json_decode( $json );
 
 		$out = array();
-			
+
 		$out[] = '<div class="carousel-container">';
 	  $out[] = '<div class="carousel-viewport">';
 		$out[] = '<ul class="carousel-tray">';
 
 		foreach( $r->products as $p ) {
-			
+
 			$out[] = '<li class="carousel-item">';
 			$out[] = sprintf('<a href="%s">',$p->contentDetails[0]->href);
 			$out[] = sprintf('<img src="%s">',$p->images->cover150Wide->href);
@@ -146,13 +146,13 @@ class ODauth {
 
 		return implode("\n",$out);
 	}
-	
+
 }
-	
-	
+
+
 if ( ! isset( $odauth ) ) {
-	global $odauth; 
+	global $odauth;
 	$odauth = new ODauth();
 }
-	
+
 endif; /* ! class_exists */
