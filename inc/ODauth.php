@@ -27,26 +27,27 @@ class ODauth {
 
 	public function _init() {
 
-		//error_log( __FUNCTION__ );
-		$shortcode = get_blog_option( get_current_blog_id(), '_coop_sitka_lib_shortname');
+		if ( function_exists( 'get_blog_option' ) ) {
+			$shortcode = get_blog_option( get_current_blog_id(), '_coop_sitka_lib_shortname');
 
-		preg_match('%(^[A-Z]{1})%', $shortcode, $matches);
-		$provsub = $matches[1];
+			preg_match('%(^[A-Z]{1})%', $shortcode, $matches);
+			$provsub = $matches[1];
 
 
-		if ($provsub === 'M' || $provsub === 'S') {
-			$this->province = 'mb';
-			$this->libID = '1326';
-			$this->clientkey = '***REMOVED***';
-			$this->clientsecret = '***REMOVED***';
-		}
+			if ($provsub === 'M' || $provsub === 'S') {
+				$this->province = 'mb';
+				$this->libID = '1326';
+				$this->clientkey = '***REMOVED***';
+				$this->clientsecret = '***REMOVED***';
+			}
 
-		else { //BC or not applicable
+			else { //BC or not applicable
 
-			$this->province = 'bc';
-			$this->libID = '1228';
-			$this->clientkey = '***REMOVED***';
-			$this->clientsecret = '***REMOVED***';
+				$this->province = 'bc';
+				$this->libID = '1228';
+				$this->clientkey = '***REMOVED***';
+				$this->clientsecret = '***REMOVED***';
+			}
 		}
 	}
 
@@ -68,12 +69,8 @@ class ODauth {
 		$json = curl_exec($ch);
 		curl_close($ch);
 
-	//	error_log( $json );
-
 		$data = json_decode( $json );
 		$token = $data->access_token;
-
-	//	error_log( $token );
 
 		return $token;
 
@@ -101,7 +98,6 @@ class ODauth {
 		return array( 'url'=>$url, 'type'=>$type );
 
 	}
-
 
 	public function get_newest_n( $token, $link, $n ) {
 
@@ -147,12 +143,6 @@ class ODauth {
 		return implode("\n",$out);
 	}
 
-}
-
-
-if ( ! isset( $odauth ) ) {
-	global $odauth;
-	$odauth = new ODauth();
 }
 
 endif; /* ! class_exists */
