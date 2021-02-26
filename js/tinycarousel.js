@@ -11,12 +11,12 @@
  * Depends on library: jQuery
  *
  */
-;(function ($) 
+;(function ($)
 {
     $.tiny = $.tiny || { };
-    
+
     $.tiny.carousel = {
-        options: {  
+        options: {
             start: 1, // where should the carousel start?
             display: 1, // how many blocks do you want to move at 1 time?
             axis: 'x', // vertical or horizontal scroller? ( x || y ).
@@ -30,11 +30,11 @@
             callback: null // function that executes after every move.
         }
     };
-    
+
     $.fn.tinycarousel_start = function () { $(this).data('tcl').start(); };
     $.fn.tinycarousel_stop = function () { $(this).data('tcl').stop(); };
     $.fn.tinycarousel_move = function (iNum) { $(this).data('tcl').move(iNum - 1,true); };
-    
+
     function Carousel(root, options)
     {
         var oSelf     = this
@@ -52,7 +52,7 @@
         ,   bForward  = true
         ,   bAxis     = options.axis === 'x'
         ;
-        
+
         function setButtons()
         {
             if(options.controls)
@@ -66,14 +66,14 @@
                 var oNumbers = $('.pagenum', oPager);
                 oNumbers.removeClass('active');
                 $(oNumbers[iCurrent]).addClass('active');
-            }           
+            }
         }
 
         function setPager( oEvent )
         {
             if( $( this ).hasClass( "pagenum" ) )
-            { 
-                oSelf.move( parseInt( this.rel, 10 ), true ); 
+            {
+                oSelf.move( parseInt( this.rel, 10 ), true );
             }
             return false;
         }
@@ -105,8 +105,8 @@
             }
 
             if(options.pager && oPager.length > 0)
-            { 
-                $('a',oPager).click(setPager); 
+            {
+                $('a',oPager).click(setPager);
             }
         }
 
@@ -118,7 +118,7 @@
             if(iCurrent > -1 && iCurrent < iSteps)
             {
                 var oPosition = {};
-                oPosition[bAxis ? 'left' : 'top'] = -(iCurrent * (iPageSize * options.display));    
+                oPosition[bAxis ? 'left' : 'top'] = -(iCurrent * (iPageSize * options.display));
                 oContent.animate(oPosition,{
                     queue: false,
                     duration: options.animation ? options.duration : 0,
@@ -157,16 +157,3 @@
     };
 
 }(jQuery));
-
-
-jQuery().ready(function($){
-	
-	$('.carousel-container').tinycarousel({
-		display: 1,
-		controls: true,
-		interval: true,
-		intervalTime: 700,
-		duration: 600
-	})
-});
-

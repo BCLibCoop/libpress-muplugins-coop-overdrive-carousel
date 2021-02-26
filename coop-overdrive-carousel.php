@@ -1,319 +1,298 @@
-<?php defined('ABSPATH') || die(-1);
+<?php
 
 /**
-*  @package: OverDrive
-*  @comment: Driver for OAuth connection and API searching
-*  @author: Erik Stainsby / Roaring Sky Software
-*  @copyright: BC Libraries Coop, 2015
-**/
+ * Coop OverDrive Carousel Widget
+ *
+ * Carousel of new titles on OverDrive
+ *
+ * PHP Version 7
+ *
+ * @package           BCLibCoop\OverdriveCarousel
+ * @author            Erik Stainsby <eric.stainsby@roaringsky.ca>
+ * @author            Jon Whipple <jon.whipple@roaringsky.ca>
+ * @author            Jonathan Schatz <jonathan.schatz@bc.libraries.coop>
+ * @author            Sam Edwards <sam.edwards@bc.libraries.coop>
+ * @copyright         2013-2021 BC Libraries Cooperative
+ * @license           GPL-2.0-or-later
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Coop OverDrive Carousel Widget
+ * Description:       Carousel of new titles on OverDrive
+ * Version:           1.0.0
+ * Network:           true
+ * Requires at least: 5.2
+ * Requires PHP:      7.0
+ * Author:            BC Libraries Cooperative
+ * Author URI:        https://bc.libraries.coop
+ * Text Domain:       coop-overdrive-carousel
+ * License:           GPL v2 or later
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ */
 
-/**
- * Plugin Name: OverDrive carousel widget
- * Description: Carousel of new titles on OverDrive. NETWORK ACTIVATE.
- * Author: Erik Stainsby, Roaring Sky Software
- * Version: 0.1.5
- **/
+namespace BCLibCoop;
 
+class OverdriveCarousel
+{
+    private static $instance;
+    protected $odauth;
 
-if ( ! class_exists( 'Overdrive_Carousel' )) :
-
-class Overdrive_Carousel {
-
-  public function __construct() {
-
-    add_action( 'wp_loaded', array( &$this, '_init' ), 24);
-
-  }
-
-  public function _init() {
-
-    //Prepare the ODauth dependency.
-    require_once( 'inc/ODauth.php' );
-    $odauth = new ODauth();
-    $odauth->_init();
-    $that = $this;
-
-    //Use a closure to pass in class + ODauth instance that calls the shortcode method
-    add_shortcode( 'overdrive_carousel', function( $atts ) use ($that, $odauth) { return $that->coop_od_shortcode($atts, $odauth); } );
-    wp_register_sidebar_widget('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget'), $options = array(), $params = array($odauth) );
-
-    wp_register_widget_control('carousel-overdrive','OverDrive Carousel',array(&$this,'coop_od_widget_control'));
-
-    if( !is_admin()) {
-      wp_register_style( 'coop-overdrive',   plugins_url( '/css/overdrive.css', __FILE__ ), false );
-      add_action( 'wp_enqueue_scripts', array( &$this, 'frontside_enqueue_styles_scripts' ));
-      wp_register_script( 'coop-overdrive-js',   plugins_url( '/js/overdrive.js',__FILE__), array('jquery'));
-    }
-    else
+    public function __construct()
     {
-      add_action( 'admin_enqueue_scripts', array( &$this, 'admin_enqueue_styles_scripts' ));
-    }
-  }
+        if (isset(self::$instance)) {
+            return;
+        }
 
-  public function frontside_enqueue_styles_scripts() {
-    wp_enqueue_style( 'coop-overdrive' );
-    wp_enqueue_script( 'coop-overdrive-js' );
-  }
+        self::$instance = $this;
 
-  public function admin_enqueue_styles_scripts($hook) {
-
-    if( 'widgets.php' !== $hook ) {
-      return;
+        add_action('init', [&$this, 'init'], 24);
     }
 
-    wp_register_style('coop-overdrive-admin',plugins_url('/css/overdrive-admin.css',__FILE__), false );
-    wp_register_script('coop-overdrive-admin-js', plugins_url( '/js/overdrive-admin.js',__FILE__), array('jquery'), false);
-    wp_enqueue_style('coop-overdrive-admin');
-    wp_enqueue_script('coop-overdrive-admin-js');
-
-  }
-
-
-  public function coop_od_shortcode ( $atts, $odauth ) {
-
-    extract( shortcode_atts( array(), $atts ));
-
-    if( ! isset($odauth)) {
-      die('no OD auth library found');
-    }
-
-    $cover_count = get_option('coop-od-covers');
-    if( empty($cover_count)) {
-      $cover_count = 20;
-    }
-
-
-    $out = array();
-
-    $dwell = 800;
-    $transition = 400;
-
-    //error_log("Province was: ". $odauth->province);
-
-    /*Start making OverDrive API calls:
-     1. Generate token
-     2. Use token to get_product_link
-     3. Use both to grab covers and data
-     */
-
-    //If the transient does not exist or is expired, refresh the data
-    if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results_' . $odauth->province ) ) ) {
-      $token = $odauth->get_token();
-
-      $link = $odauth->get_product_link( $token );
-
-      $newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
-
-      set_transient( 'coop_overdrive_daily_results_' . $odauth->province, $newest_data, WEEK_IN_SECONDS );
-      $msg = "Transient OD DATA EXPIRED for {$odauth->province} and we made an API call.";
-    }
-
-    else { //Otherwise refresh from transient data and make no calls.
-      $newest_data = get_transient( 'coop_overdrive_daily_results_' . $odauth->province );
-      $msg = "Currently using CACHED OD DATA for {$odauth->province}";
-    }
-
-    $out[] = $newest_data;
-
-    $out[] = '<script type="text/javascript">';
-    $out[] = 'jQuery().ready(function($) { ';
-    $out[] = '   $(".carousel-container").tinycarousel({ ';
-    $out[] = '       display: 1, ';
-    $out[] = '       controls: true, ';
-    $out[] = '       interval: true, ';
-    $out[] = '       intervalTime: '.$dwell.', ';
-    $out[] = '       duration:     '.$transition.' ';
-    $out[] = '  }) ';
-    $out[] = '}); ';
-    if (! empty($msg) )$out[]= "console.log('$msg')";
-    $out[] = '</script>';
-
-    return implode( "\n", $out );
-  }
-
-
-  public function coop_od_widget($args, $params) {
-
-    // error_log(__FUNCTION__);
-
-    $odauth = reset($params);
-    if( ! isset($odauth)) {
-      die('no OD auth library found');
-    }
-
-    $heading = get_option('coop-od-title');
-    $cover_count = get_option('coop-od-covers');
-    $dwell = get_option('coop-od-dwell');
-    $transition = get_option('coop-od-transition');
-
-    if( empty($heading)) {
-      $heading = 'Fresh eBooks/Audio';
-    }
-    if( empty($cover_count)) {
-      $cover_count = 20;
-    }
-    if( empty($dwell)) {
-      $dwell = 800;
-    }
-    if( empty($transition)) {
-      $transition = 400;
-    }
-
-    /*Start making OverDrive API calls:
-     1. Generate token
-     2. Use token to get_product_link
-     3. Use both to grab covers and data
-     */
-
-    //If the transient does not exist or is expired, refresh the data
-    if ( false === ( $newest_data = get_transient( 'coop_overdrive_daily_results_' . $odauth->province ) ) ) {
-
-      $token = $odauth->get_token();
-      $link = $odauth->get_product_link( $token );
-      $newest_data = $odauth->get_newest_n( $token, $link, $cover_count );
-
-      set_transient( 'coop_overdrive_daily_results_' . $odauth->province, $newest_data, 60 * HOUR_IN_SECONDS );
-
-    }
-
-    else { //Otherwise refresh from transient data and make no calls.
-      $newest_data = get_transient( 'coop_overdrive_daily_results_' . $odauth->province );
-    }
-
-    $out = array();
-
-    extract($args);
-    /*  widget-declaration:
-      id
-      name
-      before_widget
-      after_widget
-      before_title
-      after_title
-    */
-
-    $out[] = $before_widget;
-
-    $out[] = $before_title;
-    $out[] = '<a href="//downloads.bclibrary.ca/">';
-    $out[] = $heading;
-    $out[] = '</a>';
-    $out[] = $after_title;
-
-    // returning HTML currently
-    $out[] = $newest_data;
-
-    $out[] = $after_widget;
-
-    $out[] = '<script type="text/javascript">';
-    $out[] = 'jQuery().ready(function($) { ';
-    $out[] = '   $(".carousel-container").tinycarousel({ ';
-    $out[] = '       display: 1, ';
-    $out[] = '       controls: true, ';
-    $out[] = '       interval: true, ';
-    $out[] = '       intervalTime: '.$dwell.', ';
-    $out[] = '       duration:     '.$transition.' ';
-    $out[] = '  }) ';
-    $out[] = '}); ';
-    $out[] = '</script>';
-
-    echo implode( "\n", $out );
-  }
-
-
-  public function coop_od_widget_control() {
-
-  //  error_log(__FUNCTION__);
-
-    if(!get_option('coop-od-title'))
+    public function init()
     {
-      add_option('coop-od-title','Fresh eBooks & audioBooks');
+        // Prepare the ODauth dependency.
+        require_once 'inc/ODauth.php';
+        $this->odauth = new ODauth();
+
+        add_shortcode('overdrive_carousel', [&$this, 'odShortcode']);
+
+        wp_register_sidebar_widget(
+            'carousel-overdrive',
+            'OverDrive Carousel',
+            [&$this, 'odWidget']
+        );
+
+        wp_register_widget_control(
+            'carousel-overdrive',
+            'OverDrive Carousel',
+            [&$this, 'odWidgetControl']
+        );
+
+        add_action('wp_enqueue_scripts', [&$this, 'frontsideEnqueueStylesScripts']);
+        add_action('admin_enqueue_scripts', [&$this, 'adminEnqueueStylesScripts']);
     }
-    $coop_od_title = $coop_od_title_new = get_option('coop-od-title');
-    if( array_key_exists('coop-od-title',$_POST))
+
+    public function frontsideEnqueueStylesScripts()
     {
-      $coop_od_title_new = sanitize_text_field($_POST['coop-od-title']);
-    }
-    if( $coop_od_title != $coop_od_title_new ) {
-      $coop_od_title = $coop_od_title_new;
-      update_option('coop-od-title',$coop_od_title);
+        wp_enqueue_style('coop-overdrive', plugins_url('/css/overdrive.css', __FILE__));
+        wp_enqueue_script('tinycarousel', plugins_url('/js/tinycarousel.js', __FILE__), ['jquery']);
     }
 
-    if(!get_option('coop-od-covers'))
+    public function adminEnqueueStylesScripts($hook)
     {
-      add_option('coop-od-covers', 20);
+        if ($hook !== 'widgets.php') {
+            return;
+        }
+
+        wp_enqueue_style('coop-overdrive-admin', plugins_url('/css/overdrive-admin.css', __FILE__));
+        wp_enqueue_script('coop-overdrive-admin-js', plugins_url('/js/overdrive-admin.js', __FILE__), ['jquery']);
     }
-    $coop_od_covers = $coop_od_covers_new = get_option('coop-od-covers');
-    if(array_key_exists('coop-od-covers',$_POST))
+
+    public function getCovers($cover_count = 20)
     {
-      $coop_od_covers_new = sanitize_text_field($_POST['coop-od-covers']);
-    }
-    if( $coop_od_covers != $coop_od_covers_new ) {
-      $coop_od_covers = $coop_od_covers_new;
-      update_option('coop-od-covers',$coop_od_covers);
+        if (empty($this->odauth)) {
+            wp_die('no OD auth library found');
+        }
+
+        /**
+         * Start making OverDrive API calls:
+         * 1. Generate token
+         * 2. Use token to get_product_link
+         * 3. Use both to grab covers and data
+         */
+
+        $data = [
+            'covers' => get_transient('coop_overdrive_daily_results_' . $this->odauth->province),
+            'msg' => "Currently using CACHED OD DATA for {$this->odauth->province}",
+        ];
+
+        // If the transient does not exist or is expired, refresh the data
+        if (empty($data['covers'])) {
+            $token = $this->odauth->getToken();
+            $link = $this->odauth->getProductLink($token);
+            $newest_data = $this->odauth->getNewestN($token, $link, $cover_count);
+
+            $data['msg'] = "Transient OD DATA EXPIRED for {$this->odauth->province} and we made an API call.";
+            set_transient('coop_overdrive_daily_results_' . $this->odauth->province, $newest_data, WEEK_IN_SECONDS);
+        }
+
+        return $data;
     }
 
-
-    if(!get_option('coop-od-dwell'))
+    public function odShortcode($atts)
     {
-      add_option('coop-od-dwell', 800 );
+        extract(shortcode_atts([], $atts));
+
+        $cover_count = (int) get_option('coop-od-covers', '20');
+        $dwell = 800;
+        $transition = 400;
+
+        $data = $this->getCovers($cover_count);
+
+        $out = [];
+        $out[] = $data['covers'];
+
+        $out[] = '<script type="text/javascript">';
+        $out[] = 'jQuery().ready(function($) { ';
+        $out[] = '   $(".carousel-container").tinycarousel({ ';
+        $out[] = '       display: 1, ';
+        $out[] = '       controls: true, ';
+        $out[] = '       interval: true, ';
+        $out[] = '       intervalTime: ' . $dwell . ', ';
+        $out[] = '       duration:     ' . $transition . ' ';
+        $out[] = '  }) ';
+        $out[] = '}); ';
+
+        if (!empty($data['msg'])) {
+            $out[] = "console.log('{$data['msg']}')";
+        }
+
+        $out[] = '</script>';
+
+        return implode("\n", $out);
     }
-    $coop_od_dwell = $coop_od_dwell_new = get_option('coop-od-dwell');
-    if(array_key_exists('coop-od-dwell',$_POST))
+
+
+    public function odWidget($args)
     {
-      $coop_od_dwell_new = sanitize_text_field($_POST['coop-od-dwell']);
-    }
-    if( $coop_od_dwell != $coop_od_dwell_new ) {
-      $coop_od_dwell = $coop_od_dwell_new;
-      update_option('coop-od-dwell',$coop_od_dwell);
+        $heading = get_option('coop-od-title', 'Fresh eBooks/Audio');
+        $cover_count = (int) get_option('coop-od-covers', '20');
+        $dwell = (int) get_option('coop-od-dwell', '800');
+        $transition = (int) get_option('coop-od-transition', '400');
+
+        $data = $this->getCovers($cover_count);
+
+        $out = [];
+
+        extract($args);
+        /*  widget-declaration:
+            id
+            name
+            before_widget
+            after_widget
+            before_title
+            after_title
+        */
+
+        $out[] = $before_widget;
+
+        $out[] = $before_title;
+        $out[] = '<a href="//downloads.bclibrary.ca/">';
+        $out[] = $heading;
+        $out[] = '</a>';
+        $out[] = $after_title;
+
+        // returning HTML currently
+        $out[] = $data['covers'];
+
+        $out[] = $after_widget;
+
+        $out[] = '<script type="text/javascript">';
+        $out[] = 'jQuery().ready(function($) { ';
+        $out[] = '   $(".carousel-container").tinycarousel({ ';
+        $out[] = '       display: 1, ';
+        $out[] = '       controls: true, ';
+        $out[] = '       interval: true, ';
+        $out[] = '       intervalTime: ' . $dwell . ', ';
+        $out[] = '       duration:     ' . $transition . ' ';
+        $out[] = '  }) ';
+        $out[] = '}); ';
+
+        if (!empty($data['msg'])) {
+            $out[] = "console.log('{$data['msg']}')";
+        }
+
+        $out[] = '</script>';
+
+        echo implode("\n", $out);
     }
 
-
-    if(!get_option('coop-od-transition'))
+    public function odWidgetControl()
     {
-      add_option('coop-od-transition', 400 );
+        if (!get_option('coop-od-title')) {
+            add_option('coop-od-title', 'Fresh eBooks & audioBooks');
+        }
+
+        $coop_od_title = $coop_od_title_new = get_option('coop-od-title');
+
+        if (array_key_exists('coop-od-title', $_POST)) {
+            $coop_od_title_new = sanitize_text_field($_POST['coop-od-title']);
+        }
+
+        if ($coop_od_title != $coop_od_title_new) {
+            $coop_od_title = $coop_od_title_new;
+            update_option('coop-od-title', $coop_od_title);
+        }
+
+        if (!get_option('coop-od-covers')) {
+            add_option('coop-od-covers', 20);
+        }
+
+        $coop_od_covers = $coop_od_covers_new = get_option('coop-od-covers');
+        if (array_key_exists('coop-od-covers', $_POST)) {
+            $coop_od_covers_new = sanitize_text_field($_POST['coop-od-covers']);
+        }
+
+        if ($coop_od_covers != $coop_od_covers_new) {
+            $coop_od_covers = $coop_od_covers_new;
+            update_option('coop-od-covers', $coop_od_covers);
+        }
+
+        if (!get_option('coop-od-dwell')) {
+            add_option('coop-od-dwell', 800);
+        }
+
+        $coop_od_dwell = $coop_od_dwell_new = get_option('coop-od-dwell');
+
+        if (array_key_exists('coop-od-dwell', $_POST)) {
+            $coop_od_dwell_new = sanitize_text_field($_POST['coop-od-dwell']);
+        }
+
+        if ($coop_od_dwell != $coop_od_dwell_new) {
+            $coop_od_dwell = $coop_od_dwell_new;
+            update_option('coop-od-dwell', $coop_od_dwell);
+        }
+
+        if (!get_option('coop-od-transition')) {
+            add_option('coop-od-transition', 400);
+        }
+
+        $coop_od_transition = $coop_od_transition_new = get_option('coop-od-transition');
+        if (array_key_exists('coop-od-transition', $_POST)) {
+            $coop_od_transition_new = sanitize_text_field($_POST['coop-od-transition']);
+        }
+
+        if ($coop_od_transition != $coop_od_transition_new) {
+            $coop_od_transition = $coop_od_transition_new;
+            update_option('coop-od-transition', $coop_od_transition);
+        }
+
+        $out = [];
+
+        $out[] = '<p>';
+        $out[] = '<label for="coop-od-title">Heading:</label>';
+        $out[] = '<input id="coop-od-title" type="text" value="' . $coop_od_title . '" name="coop-od-title">';
+        $out[] = '</p>';
+
+        $out[] = '<p>';
+        $out[] = '<label for="coop-od-covers">Number of covers:</label>';
+        $out[] = '<input id="coop-od-covers" type="text" value="' . $coop_od_covers . '" name="coop-od-covers">';
+        $out[] = '</p>';
+
+        $out[] = '<p>';
+        $out[] = '<label for="coop-od-dwell">Dwell time (ms):</label>';
+        $out[] = '<input id="coop-od-dwell" type="text" value="' . $coop_od_dwell . '" name="coop-od-dwell">';
+        $out[] = '</p>';
+
+        $out[] = '<p>';
+        $out[] = '<label for="coop-od-transition">Transition time (ms):</label>';
+        $out[] = '<input id="coop-od-transition" type="text" value="' . $coop_od_transition
+                 . '" name="coop-od-transition">';
+        $out[] = '</p>';
+
+        echo implode("\n", $out);
     }
-    $coop_od_transition = $coop_od_transition_new = get_option('coop-od-transition');
-    if(array_key_exists('coop-od-transition',$_POST))
-    {
-      $coop_od_transition_new = sanitize_text_field($_POST['coop-od-transition']);
-    }
-    if( $coop_od_transition != $coop_od_transition_new ) {
-      $coop_od_transition = $coop_od_transition_new;
-      update_option('coop-od-transition',$coop_od_transition);
-    }
-
-    $out = array();
-
-    $out[] = '<p>';
-    $out[] = '<label for="coop-od-title">Heading:</label>';
-    $out[] = '<input id="coop-od-title" type="text" value="'.$coop_od_title.'" name="coop-od-title">';
-    $out[] = '</p>';
-
-    $out[] = '<p>';
-    $out[] = '<label for="coop-od-covers">Number of covers:</label>';
-    $out[] = '<input id="coop-od-covers" type="text" value="'.$coop_od_covers.'" name="coop-od-covers">';
-    $out[] = '</p>';
-
-    $out[] = '<p>';
-    $out[] = '<label for="coop-od-dwell">Dwell time (ms):</label>';
-    $out[] = '<input id="coop-od-dwell" type="text" value="'.$coop_od_dwell.'" name="coop-od-dwell">';
-    $out[] = '</p>';
-
-    $out[] = '<p>';
-    $out[] = '<label for="coop-od-transition">Transition time (ms):</label>';
-    $out[] = '<input id="coop-od-transition" type="text" value="'.$coop_od_transition.'" name="coop-od-transition">';
-    $out[] = '</p>';
-
-
-    echo implode("\n",$out);
-  }
-
 }
 
-if ( ! isset( $overdrive_carousel ) ) {
-  global $overdrive_carousel;
-  $overdrive_carousel = new Overdrive_Carousel();
-}
+defined('ABSPATH') || die(-1);
 
-endif; /* ! class_exists */
+new OverdriveCarousel();

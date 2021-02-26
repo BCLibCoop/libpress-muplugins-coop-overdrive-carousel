@@ -1,0 +1,33 @@
+{
+    "name": "bclibcoop/coop-overdrive-carousel",
+    "description": "Carousel of new titles on OverDrive",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "keywords": [
+        "wordpress",
+        "wordpress-plugin"
+    ],
+    "homepage": "https://bc.libraries.coop/",
+    "authors": [
+        {
+            "name": "Eric Stainsby",
+            "email": "eric.stainsby@roaringsky.ca"
+        },
+        {
+          "name": "Jon Whipple",
+          "email": "jon.whipple@roaringsky.ca"
+        },
+        {
+            "name": "Jonathan Schatz",
+            "email": "jonathan.schatz@bc.libraries.coop"
+        },
+        {
+            "name": "Sam Edwards",
+            "email": "sam.edwards@bc.libraries.coop"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "composer/installers": "^1.0"
+    }
+}
