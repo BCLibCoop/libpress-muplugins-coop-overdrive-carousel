@@ -74,7 +74,7 @@ class OverdriveCarousel
     public function frontsideEnqueueStylesScripts()
     {
         wp_enqueue_style('coop-overdrive', plugins_url('/css/overdrive.css', __FILE__));
-        wp_enqueue_script('tinycarousel', plugins_url('/js/tinycarousel.js', __FILE__), ['jquery']);
+        wp_enqueue_script('tinycarousel', plugins_url('/js/tinycarousel.js', __FILE__), ['jquery'], false, true);
     }
 
     public function adminEnqueueStylesScripts($hook)
