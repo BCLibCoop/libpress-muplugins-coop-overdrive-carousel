@@ -128,7 +128,7 @@ class ODauth
         foreach ($r->products as $p) {
             $out[] = '<li class="carousel-item">';
             $out[] = sprintf('<a href="%s">', $p->contentDetails[0]->href);
-            $out[] = sprintf('<img src="%s">', $p->images->cover150Wide->href);
+            $out[] = sprintf('<img alt="" src="%s">', $p->images->cover150Wide->href);
             $out[] = '<div class="carousel-item-assoc">';
             $out[] = sprintf(
                 '<span class="carousel-item-title">%s</span><br/><span class="carousel-item-author">%s</span></a>',

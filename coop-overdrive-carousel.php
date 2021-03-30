@@ -90,8 +90,22 @@ class OverdriveCarousel
     public function getCovers($cover_count = 20)
     {
         if (empty($this->odauth)) {
-            wp_die('no OD auth library found');
+            return [
+                'covers' => '',
+                'msg' => 'could not load odAuth library',
+            ];
         }
+
+        $covers = get_site_transient('coop_overdrive_daily_results_' . $this->odauth->province);
+
+        if (!empty($covers)) {
+            return [
+                'covers' => $covers,
+                'msg' => "Currently using CACHED OD DATA for {$this->odauth->province}",
+            ];
+        }
+
+        // If the transient does not exist or is expired, refresh the data
 
         /**
          * Start making OverDrive API calls:
@@ -99,23 +113,23 @@ class OverdriveCarousel
          * 2. Use token to get_product_link
          * 3. Use both to grab covers and data
          */
+        $token = $this->odauth->getToken();
+        $link = $this->odauth->getProductLink($token);
+        $covers = $this->odauth->getNewestN($token, $link, $cover_count);
 
-        $data = [
-            'covers' => get_transient('coop_overdrive_daily_results_' . $this->odauth->province),
-            'msg' => "Currently using CACHED OD DATA for {$this->odauth->province}",
-        ];
+        if (!empty($covers)) {
+            set_site_transient('coop_overdrive_daily_results_' . $this->odauth->province, $covers, DAY_IN_SECONDS);
 
-        // If the transient does not exist or is expired, refresh the data
-        if (empty($data['covers'])) {
-            $token = $this->odauth->getToken();
-            $link = $this->odauth->getProductLink($token);
-            $newest_data = $this->odauth->getNewestN($token, $link, $cover_count);
-
-            $data['msg'] = "Transient OD DATA EXPIRED for {$this->odauth->province} and we made an API call.";
-            set_transient('coop_overdrive_daily_results_' . $this->odauth->province, $newest_data, WEEK_IN_SECONDS);
+            return [
+                'covers' => $covers,
+                'msg' => "Transient OD DATA EXPIRED for {$this->odauth->province} and we made an API call.",
+            ];
+        } else {
+            return [
+                'covers' => '',
+                'msg' => 'Transient expired, unable to load any cover data for ' . $this->odauth->province,
+            ];
         }
-
-        return $data;
     }
 
     public function odShortcode($atts)
@@ -131,7 +145,7 @@ class OverdriveCarousel
         $out = [];
         $out[] = $data['covers'];
 
-        $out[] = '<script type="text/javascript">';
+        $out[] = '<script>';
         $out[] = 'jQuery().ready(function($) { ';
         $out[] = '   $(".carousel-container").tinycarousel({ ';
         $out[] = '       display: 1, ';
@@ -186,7 +200,7 @@ class OverdriveCarousel
 
         $out[] = $after_widget;
 
-        $out[] = '<script type="text/javascript">';
+        $out[] = '<script>';
         $out[] = 'jQuery().ready(function($) { ';
         $out[] = '   $(".carousel-container").tinycarousel({ ';
         $out[] = '       display: 1, ';
