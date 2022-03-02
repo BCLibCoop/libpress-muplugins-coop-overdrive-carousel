@@ -12,7 +12,7 @@
  * @author            Jon Whipple <jon.whipple@roaringsky.ca>
  * @author            Jonathan Schatz <jonathan.schatz@bc.libraries.coop>
  * @author            Sam Edwards <sam.edwards@bc.libraries.coop>
- * @copyright         2013-2021 BC Libraries Cooperative
+ * @copyright         2013-2022 BC Libraries Cooperative
  * @license           GPL-2.0-or-later
  */
 
@@ -21,6 +21,7 @@ namespace BCLibCoop;
 class ODauth
 {
     public $province;
+    public $caturl;
     private $libID;
     private $clientkey;
     private $clientsecret;
@@ -33,25 +34,28 @@ class ODauth
      *
      * @todo: Pull these from a .env var so secrets aren't stored in the code
      */
-    public function __construct()
+    public function __construct($config)
     {
-        // Default to BC
-        $this->province = 'bc';
-        $this->libID = '1228';
-        $this->clientkey = '***REMOVED***';
-        $this->clientsecret = '***REMOVED***';
-
-        // Check for other province
+        // Get province from library shortcode 1st letter
         $shortcode = get_blog_option(get_current_blog_id(), '_coop_sitka_lib_shortname', '');
-        if (preg_match('%(^[A-Z]{1})%', $shortcode, $matches)) {
-            $provsub = $matches[1];
 
-            if ($provsub === 'M' || $provsub === 'S') {
-                $this->province = 'mb';
-                $this->libID = '1326';
-                $this->clientkey = '***REMOVED***';
-                $this->clientsecret = '***REMOVED***';
+        if (preg_match('%(^[A-Z]{1})%', $shortcode, $matches)) {
+            $shortcode_prov = $matches[1];
+
+            foreach ($config as $province => $config) {
+                if ($shortcode_prov === $province[0]) {
+                    $this->province = $province;
+                    $this->libID = $config['libID'];
+                    $this->clientkey = $config['clientkey'];
+                    $this->clientsecret = $config['clientsecret'];
+                    $this->caturl = $config['caturl'];
+                    break;
+                }
             }
+        }
+
+        if (!$this->province) {
+            throw new \Exception("No valid config!");
         }
     }
 
@@ -119,34 +123,6 @@ class ODauth
 
         $r = json_decode($json);
 
-        $out = [];
-
-        $out[] = '<div class="carousel-container">';
-        $out[] = '<div class="carousel-viewport">';
-        $out[] = '<ul class="carousel-tray">';
-
-        foreach ($r->products as $p) {
-            $out[] = '<li class="carousel-item">';
-            $out[] = sprintf('<a href="%s">', $p->contentDetails[0]->href);
-            $out[] = sprintf('<img alt="" src="%s">', $p->images->cover150Wide->href);
-            $out[] = '<div class="carousel-item-assoc">';
-            $out[] = sprintf(
-                '<span class="carousel-item-title">%s</span><br/><span class="carousel-item-author">%s</span></a>',
-                $p->title,
-                $p->primaryCreator->name
-            );
-            $out[] = '</div><!-- .carousel-item-assoc -->';
-            $out[] = '</li>';
-        }
-
-        $out[] = '</ul><!-- .carousel-tray -->';
-        $out[] = '</div><!-- .carousel-viewport -->';
-        $out[] = '<div class="carousel-button-box">';
-        $out[] = '<a class="carousel-buttons prev" href="#">left</a>';
-        $out[] = '<a class="carousel-buttons next" href="#">right</a>';
-        $out[] = '</div><!-- .carousel-button-box -->';
-        $out[] = '</div><!-- .carousel-container -->';
-
-        return implode("\n", $out);
+        return isset($r->products) ? $r->products : [];
     }
 }

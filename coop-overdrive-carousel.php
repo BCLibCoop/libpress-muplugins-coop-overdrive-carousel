@@ -18,7 +18,7 @@
  * @wordpress-plugin
  * Plugin Name:       Coop OverDrive Carousel Widget
  * Description:       Carousel of new titles on OverDrive
- * Version:           1.0.0
+ * Version:           2.0.0
  * Network:           true
  * Requires at least: 5.2
  * Requires PHP:      7.0
@@ -33,8 +33,10 @@ namespace BCLibCoop;
 
 class OverdriveCarousel
 {
-    private static $instance;
+    public static $instance;
     protected $odauth;
+    protected $config;
+    public $caturl;
 
     public function __construct()
     {
@@ -44,63 +46,106 @@ class OverdriveCarousel
 
         self::$instance = $this;
 
-        add_action('init', [&$this, 'init'], 24);
+        $this->config = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
+
+        add_action('init', [&$this, 'init']);
+        add_action('widgets_init', [&$this, 'widgetsInit']);
+
+        add_filter('option_sidebars_widgets', [&$this, 'legacySidebarConfig']);
+        add_filter('option_widget_carousel-overdrive', [&$this, 'legacyWidgetInstance']);
     }
 
     public function init()
     {
         // Prepare the ODauth dependency.
         require_once 'inc/ODauth.php';
-        $this->odauth = new ODauth();
+
+        try {
+            $this->odauth = new ODauth($this->config);
+            $this->caturl = $this->odauth->caturl;
+        } catch (\Exception $e) {
+            $this->odauth = null;
+        }
 
         add_shortcode('overdrive_carousel', [&$this, 'odShortcode']);
 
-        wp_register_sidebar_widget(
-            'carousel-overdrive',
-            'OverDrive Carousel',
-            [&$this, 'odWidget']
-        );
-
-        wp_register_widget_control(
-            'carousel-overdrive',
-            'OverDrive Carousel',
-            [&$this, 'odWidgetControl']
-        );
-
         add_action('wp_enqueue_scripts', [&$this, 'frontsideEnqueueStylesScripts']);
-        add_action('admin_enqueue_scripts', [&$this, 'adminEnqueueStylesScripts']);
+    }
+
+    public function widgetsInit()
+    {
+        require 'inc/OverdriveCarouselWidget.php';
+
+        register_widget(__NAMESPACE__ . '\OverdriveCarouselWidget');
+    }
+
+    /**
+     * Widget previously registered as a single widget, add an instance ID
+     * so they continue to function correctly
+     */
+    public function legacySidebarConfig($sidebars)
+    {
+        foreach ($sidebars as &$sidebar_widgets) {
+            if (is_array($sidebar_widgets)) {
+                foreach ($sidebar_widgets as &$widget) {
+                    if (
+                        in_array($widget, ['carousel-overdrive'])
+                        && ! preg_match('/-\d$/', $widget)
+                    ) {
+                        $widget = $widget . '-1';
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $sidebars;
+    }
+
+    /**
+     * Widget previously registered as a single widget, add a setting for
+     * the first instance if one doesn't exist
+     */
+    public function legacyWidgetInstance($widget_settings)
+    {
+        if (!isset($widget_settings[1])) {
+            $widget_settings[1] = [];
+        }
+
+        return $widget_settings;
     }
 
     public function frontsideEnqueueStylesScripts()
     {
-        wp_enqueue_style('coop-overdrive', plugins_url('/css/overdrive.css', __FILE__));
-        wp_enqueue_script('tinycarousel', plugins_url('/js/tinycarousel.js', __FILE__), ['jquery'], false, true);
+        wp_enqueue_style(
+            'coop-overdrive',
+            plugins_url('/assets/css/overdrive.css', __FILE__),
+            [],
+            get_plugin_data(__FILE__, false, false)['Version']
+        );
+        wp_enqueue_script(
+            'tinycarousel',
+            plugins_url('/assets/js/tinycarousel.js', __FILE__),
+            ['jquery'],
+            get_plugin_data(__FILE__, false, false)['Version'],
+            true
+        );
     }
 
-    public function adminEnqueueStylesScripts($hook)
-    {
-        if ($hook !== 'widgets.php') {
-            return;
-        }
-
-        wp_enqueue_style('coop-overdrive-admin', plugins_url('/css/overdrive-admin.css', __FILE__));
-        wp_enqueue_script('coop-overdrive-admin-js', plugins_url('/js/overdrive-admin.js', __FILE__), ['jquery']);
-    }
-
-    public function getCovers($cover_count = 20)
+    public function getProducts($cover_count = 20)
     {
         if (empty($this->odauth)) {
             return [
-                'covers' => '',
+                'products' => [],
                 'msg' => 'could not load odAuth library',
             ];
         }
 
-        $covers = get_site_transient('coop_overdrive_daily_results_' . $this->odauth->province);
+        $products = get_site_transient('coop_overdrive_daily_results_' . $this->odauth->province);
 
-        if (!empty($covers)) {
+        if (!empty($products)) {
             return [
-                'covers' => $covers,
+                'products' => $products,
                 'msg' => "Currently using CACHED OD DATA for {$this->odauth->province}",
             ];
         }
@@ -115,18 +160,18 @@ class OverdriveCarousel
          */
         $token = $this->odauth->getToken();
         $link = $this->odauth->getProductLink($token);
-        $covers = $this->odauth->getNewestN($token, $link, $cover_count);
+        $products = $this->odauth->getNewestN($token, $link, $cover_count);
 
-        if (!empty($covers)) {
-            set_site_transient('coop_overdrive_daily_results_' . $this->odauth->province, $covers, DAY_IN_SECONDS);
+        if (!empty($products)) {
+            set_site_transient('coop_overdrive_daily_results_' . $this->odauth->province, $products, DAY_IN_SECONDS);
 
             return [
-                'covers' => $covers,
+                'products' => $products,
                 'msg' => "Transient OD DATA EXPIRED for {$this->odauth->province} and we made an API call.",
             ];
         } else {
             return [
-                'covers' => '',
+                'products' => [],
                 'msg' => 'Transient expired, unable to load any cover data for ' . $this->odauth->province,
             ];
         }
@@ -134,176 +179,20 @@ class OverdriveCarousel
 
     public function odShortcode($atts)
     {
-        extract(shortcode_atts([], $atts));
+        extract(shortcode_atts([
+            'cover_count' => (int) get_option('coop-od-covers', '20'),
+            'dwell' => (int) get_option('coop-od-dwell', '800'),
+            'transition' => (int) get_option('coop-od-transition', '400'),
+        ], $atts));
 
-        $cover_count = (int) get_option('coop-od-covers', '20');
-        $dwell = 800;
-        $transition = 400;
+        $data = $this->getProducts($cover_count);
+        $products = $data['products'];
 
-        $data = $this->getCovers($cover_count);
+        ob_start();
 
-        $out = [];
-        $out[] = $data['covers'];
+        require 'inc/views/shortcode.php';
 
-        $out[] = '<script>';
-        $out[] = 'jQuery().ready(function($) { ';
-        $out[] = '   $(".carousel-container").tinycarousel({ ';
-        $out[] = '       display: 1, ';
-        $out[] = '       controls: true, ';
-        $out[] = '       interval: true, ';
-        $out[] = '       intervalTime: ' . $dwell . ', ';
-        $out[] = '       duration:     ' . $transition . ' ';
-        $out[] = '  }) ';
-        $out[] = '}); ';
-
-        if (!empty($data['msg'])) {
-            $out[] = "console.log('{$data['msg']}')";
-        }
-
-        $out[] = '</script>';
-
-        return implode("\n", $out);
-    }
-
-
-    public function odWidget($args)
-    {
-        $heading = get_option('coop-od-title', 'Fresh eBooks/Audio');
-        $cover_count = (int) get_option('coop-od-covers', '20');
-        $dwell = (int) get_option('coop-od-dwell', '800');
-        $transition = (int) get_option('coop-od-transition', '400');
-
-        $data = $this->getCovers($cover_count);
-
-        $out = [];
-
-        extract($args);
-        /*  widget-declaration:
-            id
-            name
-            before_widget
-            after_widget
-            before_title
-            after_title
-        */
-
-        $out[] = $before_widget;
-
-        $out[] = $before_title;
-        $out[] = '<a href="//downloads.bclibrary.ca/">';
-        $out[] = $heading;
-        $out[] = '</a>';
-        $out[] = $after_title;
-
-        // returning HTML currently
-        $out[] = $data['covers'];
-
-        $out[] = $after_widget;
-
-        $out[] = '<script>';
-        $out[] = 'jQuery().ready(function($) { ';
-        $out[] = '   $(".carousel-container").tinycarousel({ ';
-        $out[] = '       display: 1, ';
-        $out[] = '       controls: true, ';
-        $out[] = '       interval: true, ';
-        $out[] = '       intervalTime: ' . $dwell . ', ';
-        $out[] = '       duration:     ' . $transition . ' ';
-        $out[] = '  }) ';
-        $out[] = '}); ';
-
-        if (!empty($data['msg'])) {
-            $out[] = "console.log('{$data['msg']}')";
-        }
-
-        $out[] = '</script>';
-
-        echo implode("\n", $out);
-    }
-
-    public function odWidgetControl()
-    {
-        if (!get_option('coop-od-title')) {
-            add_option('coop-od-title', 'Fresh eBooks & audioBooks');
-        }
-
-        $coop_od_title = $coop_od_title_new = get_option('coop-od-title');
-
-        if (array_key_exists('coop-od-title', $_POST)) {
-            $coop_od_title_new = sanitize_text_field($_POST['coop-od-title']);
-        }
-
-        if ($coop_od_title != $coop_od_title_new) {
-            $coop_od_title = $coop_od_title_new;
-            update_option('coop-od-title', $coop_od_title);
-        }
-
-        if (!get_option('coop-od-covers')) {
-            add_option('coop-od-covers', 20);
-        }
-
-        $coop_od_covers = $coop_od_covers_new = get_option('coop-od-covers');
-        if (array_key_exists('coop-od-covers', $_POST)) {
-            $coop_od_covers_new = sanitize_text_field($_POST['coop-od-covers']);
-        }
-
-        if ($coop_od_covers != $coop_od_covers_new) {
-            $coop_od_covers = $coop_od_covers_new;
-            update_option('coop-od-covers', $coop_od_covers);
-        }
-
-        if (!get_option('coop-od-dwell')) {
-            add_option('coop-od-dwell', 800);
-        }
-
-        $coop_od_dwell = $coop_od_dwell_new = get_option('coop-od-dwell');
-
-        if (array_key_exists('coop-od-dwell', $_POST)) {
-            $coop_od_dwell_new = sanitize_text_field($_POST['coop-od-dwell']);
-        }
-
-        if ($coop_od_dwell != $coop_od_dwell_new) {
-            $coop_od_dwell = $coop_od_dwell_new;
-            update_option('coop-od-dwell', $coop_od_dwell);
-        }
-
-        if (!get_option('coop-od-transition')) {
-            add_option('coop-od-transition', 400);
-        }
-
-        $coop_od_transition = $coop_od_transition_new = get_option('coop-od-transition');
-        if (array_key_exists('coop-od-transition', $_POST)) {
-            $coop_od_transition_new = sanitize_text_field($_POST['coop-od-transition']);
-        }
-
-        if ($coop_od_transition != $coop_od_transition_new) {
-            $coop_od_transition = $coop_od_transition_new;
-            update_option('coop-od-transition', $coop_od_transition);
-        }
-
-        $out = [];
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-title">Heading:</label>';
-        $out[] = '<input id="coop-od-title" type="text" value="' . $coop_od_title . '" name="coop-od-title">';
-        $out[] = '</p>';
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-covers">Number of covers:</label>';
-        $out[] = '<input id="coop-od-covers" type="text" value="' . $coop_od_covers . '" name="coop-od-covers">';
-        $out[] = '</p>';
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-dwell">Dwell time (ms):</label>';
-        $out[] = '<input id="coop-od-dwell" type="text" value="' . $coop_od_dwell . '" name="coop-od-dwell">';
-        $out[] = '</p>';
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-transition">Transition time (ms):</label>';
-        $out[] = '<input id="coop-od-transition" type="text" value="' . $coop_od_transition
-                 . '" name="coop-od-transition">';
-        $out[] = '</p>';
-
-        echo implode("\n", $out);
+        return ob_get_clean();
     }
 }
 
