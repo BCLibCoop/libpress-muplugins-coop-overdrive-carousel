@@ -97,6 +97,15 @@ class OverdriveCarouselWidget extends \WP_Widget
         $data = OverdriveCarousel::$instance->getProducts($cover_count);
         $products = $data['products'];
 
+        $flickity_options = [
+            'autoPlay' => $dwell + $transition,
+            'wrapAround' => true,
+            'pageDots' => false,
+            'fade' => false,
+            'imagesLoaded' => true,
+        ];
+        $flickity_options = json_encode($flickity_options);
+
         extract($args);
         /*  widget-declaration:
             id
