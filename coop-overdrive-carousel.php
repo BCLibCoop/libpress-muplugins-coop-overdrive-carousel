@@ -12,13 +12,13 @@
  * @author            Jon Whipple <jon.whipple@roaringsky.ca>
  * @author            Jonathan Schatz <jonathan.schatz@bc.libraries.coop>
  * @author            Sam Edwards <sam.edwards@bc.libraries.coop>
- * @copyright         2013-2021 BC Libraries Cooperative
+ * @copyright         2013-2022 BC Libraries Cooperative
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
  * Plugin Name:       Coop OverDrive Carousel Widget
  * Description:       Carousel of new titles on OverDrive
- * Version:           2.0.0
+ * Version:           3.0.0
  * Network:           true
  * Requires at least: 5.2
  * Requires PHP:      7.0
@@ -46,7 +46,7 @@ class OverdriveCarousel
 
         self::$instance = $this;
 
-        $this->config = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
+        $this->config = defined('OVERDRIVE_CONFIG') ? \OVERDRIVE_CONFIG : [];
 
         add_action('init', [&$this, 'init']);
         add_action('widgets_init', [&$this, 'widgetsInit']);
@@ -218,21 +218,25 @@ class OverdriveCarousel
 
     public function odShortcode($atts)
     {
+        // If there's an old saved dwell time that's too short, pad it out
+        $dwell = (int) get_option('coop-od-dwell', '4000');
+        $dwell += ($dwell < 1000) ? 2000 : 0;
+
         extract(shortcode_atts([
             'cover_count' => (int) get_option('coop-od-covers', '20'),
-            'dwell' => (int) get_option('coop-od-dwell', '800'),
-            'transition' => (int) get_option('coop-od-transition', '400'),
+            'dwell' => $dwell,
         ], $atts));
 
         $data = $this->getProducts($cover_count);
         $products = $data['products'];
 
         $flickity_options = [
-            'autoPlay' => $dwell + $transition,
+            'autoPlay' => $dwell,
             'wrapAround' => true,
             'pageDots' => false,
-            'fade' => false,
+            'fade' => true,
             'imagesLoaded' => true,
+            'lazyLoad' => 2,
         ];
         $flickity_options = json_encode($flickity_options);
 

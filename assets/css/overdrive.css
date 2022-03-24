@@ -5,32 +5,9 @@
 *	@copyright: BC Libraries Coop, 2013
 **/
 
-/* Tiny Carousel */
-.overdrive-carousel {
-  /* height: 1%; */
-  /* overflow: hidden; */
-  padding: 0;
-  margin: 0 auto;
-  width: 204px;
-  /* border: thin solid #ddd; */
-}
-
-.carousel-item-title,
-.carousel-item-author {
-  font-size: 0.8em;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.carousel-item-author {
-  font-style: italic;
-}
-
-.carousel-item-assoc {
-  line-height: 1em;
+.overdrive-carousel-container {
+  margin: 0px auto;
   text-align: center;
-  margin-right: 3.15em;
 }
 
 /* Hide extra slides while loading */
@@ -44,4 +21,46 @@
 
 .overdrive-carousel.flickity-enabled .carousel-item {
   display: block;
+}
+
+/* Button Styling */
+.overdrive-carousel .flickity-prev-next-button {
+  color: white;
+  background-color: #333;
+  width: 33px;
+  height: 33px;
+}
+
+.overdrive-carousel .flickity-prev-next-button:hover {
+  background-color: #666;
+}
+
+.overdrive-carousel .carousel-item {
+  margin: 0 auto;
+  width: 100%;
+}
+
+.overdrive-carousel .carousel-item .carousel-item-cover {
+  width: 150px !important;
+  height: 200px !important;
+  display: inline-block;
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info {
+  line-height: 1em;
+  /* text-align: center; */
+  /* margin-right: 3.15em; */
+  /* display: inline-block; */
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-title,
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+  font-size: 0.8em;
+  /* text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap; */
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+  font-style: italic;
 }
