@@ -29,5 +29,15 @@
     "require": {
         "php": ">=7.0",
         "composer/installers": "^1.0"
+    },
+    "autoload": {
+      "psr-4": {
+          "BCLibCoop\\": "inc/"
+      }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
     }
 }

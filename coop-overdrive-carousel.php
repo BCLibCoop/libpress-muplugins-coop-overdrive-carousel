@@ -31,6 +31,12 @@
 
 namespace BCLibCoop;
 
+/**
+ * Require Composer autoloader if installed on it's own
+ */
+if (file_exists($composer = __DIR__ . '/vendor/autoload.php')) {
+    require_once $composer;
+}
 class OverdriveCarousel
 {
     public static $instance;
@@ -57,9 +63,6 @@ class OverdriveCarousel
 
     public function init()
     {
-        // Prepare the ODauth dependency.
-        require_once 'inc/ODauth.php';
-
         try {
             $this->odauth = new ODauth($this->config);
             $this->caturl = $this->odauth->caturl;
@@ -74,8 +77,6 @@ class OverdriveCarousel
 
     public function widgetsInit()
     {
-        require 'inc/OverdriveCarouselWidget.php';
-
         register_widget(__NAMESPACE__ . '\OverdriveCarouselWidget');
     }
 
