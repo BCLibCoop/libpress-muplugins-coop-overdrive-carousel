@@ -1,6 +1,6 @@
 <?php
 
-namespace BCLibCoop;
+namespace BCLibCoop\OverdriveCarousel;
 
 class OverdriveCarouselWidget extends \WP_Widget
 {

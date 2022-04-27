@@ -16,7 +16,7 @@
  * @license           GPL-2.0-or-later
  */
 
-namespace BCLibCoop;
+namespace BCLibCoop\OverdriveCarousel;
 
 class ODauth
 {
@@ -31,8 +31,6 @@ class ODauth
 
     /**
      * Set up ODauth credentials
-     *
-     * @todo: Pull these from a .env var so secrets aren't stored in the code
      */
     public function __construct($config)
     {

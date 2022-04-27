@@ -29,7 +29,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
-namespace BCLibCoop;
+namespace BCLibCoop\OverdriveCarousel;
 
 /**
  * Require Composer autoloader if installed on it's own
@@ -37,6 +37,7 @@ namespace BCLibCoop;
 if (file_exists($composer = __DIR__ . '/vendor/autoload.php')) {
     require_once $composer;
 }
+
 class OverdriveCarousel
 {
     public static $instance;
@@ -52,7 +53,7 @@ class OverdriveCarousel
 
         self::$instance = $this;
 
-        $this->config = defined('OVERDRIVE_CONFIG') ? \OVERDRIVE_CONFIG : [];
+        $this->config = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
 
         add_action('init', [&$this, 'init']);
         add_action('widgets_init', [&$this, 'widgetsInit']);
@@ -77,7 +78,7 @@ class OverdriveCarousel
 
     public function widgetsInit()
     {
-        register_widget(__NAMESPACE__ . '\OverdriveCarouselWidget');
+        register_widget(OverdriveCarouselWidget::class);
     }
 
     /**
