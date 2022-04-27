@@ -5,84 +5,62 @@
 *	@copyright: BC Libraries Coop, 2013
 **/
 
-/* Tiny Carousel */
-.carousel-container {
-  height: 1%;
-  overflow: hidden;
-  padding: 0;
-  margin: 0 auto;
-  width: 204px;
-  /* border: thin solid #ddd; */
-}
-
-.carousel-viewport {
-  float: left;
-  width: 205px; /* 105px */
-  height: 260px;
-  overflow: hidden;
-  position: relative;
-}
-
-.carousel-buttons {
-  background: url("../img/buttons.png") no-repeat scroll 0 0 transparent;
-  display: block;
-  margin: -2px -6px 0 57px;
-  background-position: 0 -38px;
-  text-indent: -999em;
-  float: left;
-  width: 39px;
-  height: 37px;
-  overflow: hidden;
-  position: relative;
-}
-
-.carousel-container .next {
-  background-position: 0 0;
-  margin: -0.21em 0 0 10px;
-}
-
-.carousel-container .disable {
-  visibility: hidden;
-}
-
-.carousel-tray {
-  list-style: none;
-  position: absolute;
-  padding: 0;
-  margin: 0 26px;
-  width: 102px;
-  left: 0;
-  top: 0;
-}
-
-.carousel-tray li {
-  float: left;
-  margin: 0 20px 0 0;
-  padding: 1px;
-  height: 260px; /* 235px */
-  /* border: thin solid #ddd; */
-  width: 200px; /* 100px */
-  overflow: hidden;
-}
-
-.carousel-container .carousel-button-box {
-  border: none !important;
-}
-
-span.carousel-item-title,
-span.carousel-item-author {
-  font-size: 0.8em;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-span.carousel-item-author {
-  font-style: italic;
-}
-
-div.carousel-item-assoc {
-  line-height: 1em;
+.overdrive-carousel-container {
+  margin: 0px auto;
   text-align: center;
-  margin-right: 3.15em;
+}
+
+/* Hide extra slides while loading */
+.overdrive-carousel .carousel-item {
+  display: none;
+}
+
+.overdrive-carousel .carousel-item:first-child {
+  display: block;
+}
+
+.overdrive-carousel.flickity-enabled .carousel-item {
+  display: block;
+}
+
+/* Button Styling */
+.overdrive-carousel .flickity-prev-next-button {
+  color: white;
+  background-color: #333;
+  width: 33px;
+  height: 33px;
+}
+
+.overdrive-carousel .flickity-prev-next-button:hover {
+  background-color: #666;
+}
+
+.overdrive-carousel .carousel-item {
+  margin: 0 auto;
+  width: 100%;
+}
+
+.overdrive-carousel .carousel-item .carousel-item-cover {
+  width: 150px !important;
+  height: 200px !important;
+  display: inline-block;
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info {
+  line-height: 1em;
+  /* text-align: center; */
+  /* margin-right: 3.15em; */
+  /* display: inline-block; */
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-title,
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+  font-size: 0.8em;
+  /* text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap; */
+}
+
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+  font-style: italic;
 }

@@ -12,13 +12,13 @@
  * @author            Jon Whipple <jon.whipple@roaringsky.ca>
  * @author            Jonathan Schatz <jonathan.schatz@bc.libraries.coop>
  * @author            Sam Edwards <sam.edwards@bc.libraries.coop>
- * @copyright         2013-2021 BC Libraries Cooperative
+ * @copyright         2013-2022 BC Libraries Cooperative
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
  * Plugin Name:       Coop OverDrive Carousel Widget
  * Description:       Carousel of new titles on OverDrive
- * Version:           2.0.0
+ * Version:           3.0.0
  * Network:           true
  * Requires at least: 5.2
  * Requires PHP:      7.0
@@ -31,6 +31,12 @@
 
 namespace BCLibCoop;
 
+/**
+ * Require Composer autoloader if installed on it's own
+ */
+if (file_exists($composer = __DIR__ . '/vendor/autoload.php')) {
+    require_once $composer;
+}
 class OverdriveCarousel
 {
     public static $instance;
@@ -46,7 +52,7 @@ class OverdriveCarousel
 
         self::$instance = $this;
 
-        $this->config = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
+        $this->config = defined('OVERDRIVE_CONFIG') ? \OVERDRIVE_CONFIG : [];
 
         add_action('init', [&$this, 'init']);
         add_action('widgets_init', [&$this, 'widgetsInit']);
@@ -57,9 +63,6 @@ class OverdriveCarousel
 
     public function init()
     {
-        // Prepare the ODauth dependency.
-        require_once 'inc/ODauth.php';
-
         try {
             $this->odauth = new ODauth($this->config);
             $this->caturl = $this->odauth->caturl;
@@ -74,8 +77,6 @@ class OverdriveCarousel
 
     public function widgetsInit()
     {
-        require 'inc/OverdriveCarouselWidget.php';
-
         register_widget(__NAMESPACE__ . '\OverdriveCarouselWidget');
     }
 
@@ -117,18 +118,57 @@ class OverdriveCarousel
 
     public function frontsideEnqueueStylesScripts()
     {
+        $suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
+
+        /**
+         * All Coop plugins will include their own copy of flickity, but
+         * only the first one actually enqued should be needed/registered.
+         * Assuming we keep versions in sync, this shouldn't be an issue.
+         */
+
+        /* flickity */
+        wp_enqueue_script(
+            'flickity',
+            plugins_url('/assets/js/flickity.pkgd' . $suffix . '.js', dirname(__FILE__)),
+            [
+                'jquery',
+            ],
+            '2.3.0',
+            true
+        );
+
+        wp_enqueue_script(
+            'flickity-fade',
+            plugins_url('/assets/js/flickity-fade.js', dirname(__FILE__)),
+            [
+                'flickity',
+            ],
+            '1.0.0',
+            true
+        );
+
+        wp_register_style(
+            'flickity',
+            plugins_url('/assets/css/flickity' . $suffix . '.css', dirname(__FILE__)),
+            [],
+            '2.3.0'
+        );
+
+        wp_register_style(
+            'flickity-fade',
+            plugins_url('/assets/css/flickity-fade.css', dirname(__FILE__)),
+            ['flickity'],
+            '1.0.0'
+        );
+
         wp_enqueue_style(
             'coop-overdrive',
             plugins_url('/assets/css/overdrive.css', __FILE__),
-            [],
+            [
+                'flickity',
+                'flickity-fade'
+            ],
             get_plugin_data(__FILE__, false, false)['Version']
-        );
-        wp_enqueue_script(
-            'tinycarousel',
-            plugins_url('/assets/js/tinycarousel.js', __FILE__),
-            ['jquery'],
-            get_plugin_data(__FILE__, false, false)['Version'],
-            true
         );
     }
 
@@ -179,14 +219,27 @@ class OverdriveCarousel
 
     public function odShortcode($atts)
     {
+        // If there's an old saved dwell time that's too short, pad it out
+        $dwell = (int) get_option('coop-od-dwell', '4000');
+        $dwell += ($dwell < 1000) ? 2000 : 0;
+
         extract(shortcode_atts([
             'cover_count' => (int) get_option('coop-od-covers', '20'),
-            'dwell' => (int) get_option('coop-od-dwell', '800'),
-            'transition' => (int) get_option('coop-od-transition', '400'),
+            'dwell' => $dwell,
         ], $atts));
 
         $data = $this->getProducts($cover_count);
         $products = $data['products'];
+
+        $flickity_options = [
+            'autoPlay' => $dwell,
+            'wrapAround' => true,
+            'pageDots' => false,
+            'fade' => true,
+            'imagesLoaded' => true,
+            'lazyLoad' => 2,
+        ];
+        $flickity_options = json_encode($flickity_options);
 
         ob_start();
 

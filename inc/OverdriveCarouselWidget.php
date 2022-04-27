@@ -37,7 +37,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         }
 
 
-        $coop_od_dwell = get_option('coop-od-dwell', '800');
+        $coop_od_dwell = get_option('coop-od-dwell', '4000');
 
         if (array_key_exists('coop-od-dwell', $_POST)) {
             $coop_od_dwell_new = sanitize_text_field($_POST['coop-od-dwell']);
@@ -45,17 +45,6 @@ class OverdriveCarouselWidget extends \WP_Widget
             if ($coop_od_dwell != $coop_od_dwell_new) {
                 $coop_od_dwell = $coop_od_dwell_new;
                 update_option('coop-od-dwell', $coop_od_dwell);
-            }
-        }
-
-        $coop_od_transition = get_option('coop-od-transition', '400');
-
-        if (array_key_exists('coop-od-transition', $_POST)) {
-            $coop_od_transition_new = sanitize_text_field($_POST['coop-od-transition']);
-
-            if ($coop_od_transition != $coop_od_transition_new) {
-                $coop_od_transition = $coop_od_transition_new;
-                update_option('coop-od-transition', $coop_od_transition);
             }
         }
 
@@ -76,26 +65,33 @@ class OverdriveCarouselWidget extends \WP_Widget
         $out[] = '<input id="coop-od-dwell" type="text" value="' . $coop_od_dwell . '" name="coop-od-dwell">';
         $out[] = '</p>';
 
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-transition">Transition time (ms):</label>';
-        $out[] = '<input id="coop-od-transition" type="text" value="' . $coop_od_transition
-                 . '" name="coop-od-transition">';
-        $out[] = '</p>';
-
         echo implode("\n", $out);
     }
 
     public function widget($args, $instance)
     {
+        // If there's an old saved dwell time that's too short, pad it out
+        $dwell = (int) get_option('coop-od-dwell', '4000');
+        $dwell += ($dwell < 1000) ? 2000 : 0;
+
         extract(shortcode_atts([
             'heading' => get_option('coop-od-title', 'Fresh eBooks/Audio'),
             'cover_count' => (int) get_option('coop-od-covers', '20'),
-            'dwell' => (int) get_option('coop-od-dwell', '800'),
-            'transition' => (int) get_option('coop-od-transition', '400'),
+            'dwell' => $dwell,
         ], $instance));
 
         $data = OverdriveCarousel::$instance->getProducts($cover_count);
         $products = $data['products'];
+
+        $flickity_options = [
+            'autoPlay' => $dwell,
+            'wrapAround' => true,
+            'pageDots' => false,
+            'fade' => true,
+            'imagesLoaded' => true,
+            'lazyLoad' => 2,
+        ];
+        $flickity_options = json_encode($flickity_options);
 
         extract($args);
         /*  widget-declaration:

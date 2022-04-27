@@ -14,8 +14,8 @@
             "email": "eric.stainsby@roaringsky.ca"
         },
         {
-          "name": "Jon Whipple",
-          "email": "jon.whipple@roaringsky.ca"
+            "name": "Jon Whipple",
+            "email": "jon.whipple@roaringsky.ca"
         },
         {
             "name": "Jonathan Schatz",
@@ -29,5 +29,15 @@
     "require": {
         "php": ">=7.0",
         "composer/installers": "^1.0 || ^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "BCLibCoop\\": "inc/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
     }
 }
