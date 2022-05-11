@@ -1,10 +1,3 @@
-/**
-*	@package: Carousel animation
-*	@comment: OverDrive flavour
-*	@author: Erik Stainsby / Roaring Sky Software
-*	@copyright: BC Libraries Coop, 2013
-**/
-
 .overdrive-carousel-container {
   margin: 0px auto;
   text-align: center;
@@ -48,17 +41,11 @@
 
 .overdrive-carousel .carousel-item .carousel-item-info {
   line-height: 1em;
-  /* text-align: center; */
-  /* margin-right: 3.15em; */
-  /* display: inline-block; */
 }
 
 .overdrive-carousel .carousel-item .carousel-item-info .carousel-item-title,
 .overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
   font-size: 0.8em;
-  /* text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap; */
 }
 
 .overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {

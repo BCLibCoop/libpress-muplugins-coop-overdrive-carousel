@@ -12,6 +12,11 @@ class OverdriveCarouselWidget extends \WP_Widget
         );
     }
 
+    /**
+     * Display the settings form
+     *
+     * @todo save and get instance variables
+     */
     public function form($instance)
     {
         $coop_od_title = get_option('coop-od-title', 'Fresh eBooks & audioBooks');
