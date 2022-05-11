@@ -78,10 +78,10 @@ class OverdriveCarouselWidget extends \WP_Widget
             'heading' => get_option('coop-od-title', 'Fresh eBooks/Audio'),
             'cover_count' => (int) get_option('coop-od-covers', '20'),
             'dwell' => $dwell,
+            'formats' => '',
         ], $instance));
 
-        $data = OverdriveCarousel::$instance->getProducts($cover_count);
-        $products = $data['products'];
+        $products = OverdriveCarousel::$instance->getProducts($cover_count, $formats);
 
         $flickity_options = [
             'autoPlay' => $dwell,

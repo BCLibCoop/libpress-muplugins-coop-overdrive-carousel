@@ -25,6 +25,8 @@ class ODauth
     private $libID;
     private $clientkey;
     private $clientsecret;
+    private $token;
+    private $product_link;
 
     private $auth_uri = 'https://oauth.overdrive.com/token';
     private $account_uri = 'https://api.overdrive.com/v1/libraries';
@@ -57,7 +59,7 @@ class ODauth
         }
     }
 
-    public function getToken()
+    public function setToken()
     {
         $hash = base64_encode($this->clientkey . ':' . $this->clientsecret);
         $authheader = [
@@ -78,19 +80,22 @@ class ODauth
         curl_close($ch);
 
         $data = json_decode($json);
-        $token = $data->access_token;
 
-        return $token;
+        $this->token = $data->access_token;
     }
 
-    public function getProductLink($token)
+    public function setProductLink()
     {
+        if (empty($this->token)) {
+            $this->setToken();
+        }
+
         $userip = $_SERVER['REMOTE_ADDR'];
 
         $ch = curl_init($this->account_uri . '/' . $this->libID);
 
         curl_setopt($ch, CURLOPT_HTTPGET, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token, 'X-Forwarded-For: ' . $userip]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token, 'X-Forwarded-For: ' . $userip]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
@@ -99,28 +104,48 @@ class ODauth
 
         $account = json_decode($json);
 
-        $url = $account->links->products->href;
-        $type = $account->links->products->type;
-
-        return ['url' => $url, 'type' => $type];
+        $this->product_link = [
+            'url' => $account->links->products->href,
+            'type' => $account->links->products->type,
+        ];
     }
 
-    public function getNewestN($token, $link, $n)
+    public function getNewestN($n, $formats)
     {
+        if (empty($this->token)) {
+            $this->setToken();
+        }
+
+        if (empty($this->product_link)) {
+            $this->setProductLink();
+        }
+
         $userip = $_SERVER['REMOTE_ADDR'];
 
-        $ch = curl_init($link['url'] . '/?limit=' . $n . '&offset=0&sort=dateadded:desc');
+        $query_params = [
+            'limit' => $n,
+            'offset' => 0,
+            'sort' => 'dateadded:desc',
+        ];
+
+        if (!empty($formats)) {
+            $query_params['formats'] = $formats;
+        }
+
+        $query = build_query($query_params);
+
+        $ch = curl_init($this->product_link['url'] . '/?' . $query);
 
         curl_setopt($ch, CURLOPT_HTTPGET, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token, 'X-Forwarded-For: ' . $userip]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token, 'X-Forwarded-For: ' . $userip]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         $json = curl_exec($ch);
         curl_close($ch);
 
-        $r = json_decode($json);
+        $r = json_decode($json, true);
 
-        return isset($r->products) ? $r->products : [];
+        return isset($r['products']) ? $r['products'] : [];
     }
 }
