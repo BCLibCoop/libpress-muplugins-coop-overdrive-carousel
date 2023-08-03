@@ -2,6 +2,8 @@
 
 namespace BCLibCoop\OverdriveCarousel;
 
+use BCLibCoop\CoopHighlights\CoopHighlights;
+
 class OverdriveCarousel
 {
     public static $instance;
@@ -119,6 +121,7 @@ class OverdriveCarousel
 
         if (
             (!empty($post) && has_shortcode($post->post_content, 'overdrive_carousel'))
+            || (is_front_page() && has_shortcode(CoopHighlights::allHighlightsContent(), 'sitka_carousel'))
             || is_active_widget(false, false, 'carousel-overdrive')
         ) {
             /* flickity */
