@@ -107,6 +107,8 @@ class OverdriveCarousel
 
     public function frontsideEnqueueStylesScripts()
     {
+        global $post;
+
         $suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
 
         /**
@@ -115,50 +117,55 @@ class OverdriveCarousel
          * Assuming we keep versions in sync, this shouldn't be an issue.
          */
 
-        /* flickity */
-        wp_enqueue_script(
-            'flickity',
-            plugins_url('/assets/js/flickity.pkgd' . $suffix . '.js', dirname(COOP_OVERDRIVE_PLUGIN_FILE)),
-            [
-                'jquery',
-            ],
-            '2.3.0',
-            true
-        );
-
-        wp_enqueue_script(
-            'flickity-fade',
-            plugins_url('/assets/js/flickity-fade.js', dirname(COOP_OVERDRIVE_PLUGIN_FILE)),
-            [
+        if (
+            (!empty($post) && has_shortcode($post->post_content, 'overdrive_carousel'))
+            || is_active_widget(false, false, 'carousel-overdrive')
+        ) {
+            /* flickity */
+            wp_enqueue_script(
                 'flickity',
-            ],
-            '1.0.0',
-            true
-        );
+                plugins_url('/assets/js/flickity.pkgd' . $suffix . '.js', COOP_OVERDRIVE_PLUGIN_FILE),
+                [
+                    'jquery',
+                ],
+                '2.3.0-accessible',
+                true
+            );
 
-        wp_register_style(
-            'flickity',
-            plugins_url('/assets/css/flickity' . $suffix . '.css', dirname(COOP_OVERDRIVE_PLUGIN_FILE)),
-            [],
-            '2.3.0'
-        );
+            wp_enqueue_script(
+                'flickity-fade',
+                plugins_url('/assets/js/flickity-fade.js', COOP_OVERDRIVE_PLUGIN_FILE),
+                [
+                    'flickity',
+                ],
+                '1.0.0',
+                true
+            );
 
-        wp_register_style(
-            'flickity-fade',
-            plugins_url('/assets/css/flickity-fade.css', dirname(COOP_OVERDRIVE_PLUGIN_FILE)),
-            ['flickity'],
-            '1.0.0'
-        );
-
-        wp_enqueue_style(
-            'coop-overdrive',
-            plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
-            [
+            wp_register_style(
                 'flickity',
-                'flickity-fade'
-            ],
-            get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
-        );
+                plugins_url('/assets/css/flickity' . $suffix . '.css', COOP_OVERDRIVE_PLUGIN_FILE),
+                [],
+                '2.3.0-accessible'
+            );
+
+            wp_register_style(
+                'flickity-fade',
+                plugins_url('/assets/css/flickity-fade.css', COOP_OVERDRIVE_PLUGIN_FILE),
+                ['flickity'],
+                '1.0.0'
+            );
+
+            wp_enqueue_style(
+                'coop-overdrive',
+                plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
+                [
+                    'flickity',
+                    'flickity-fade'
+                ],
+                get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
+            );
+        }
     }
 
     private function handleFormats($formats = '')
