@@ -70,6 +70,7 @@ class ODauth
 
         $ch = curl_init($this->auth_uri);
 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $authheader);
@@ -94,6 +95,7 @@ class ODauth
 
         $ch = curl_init($this->account_uri . '/' . $this->libID);
 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_HTTPGET, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token, 'X-Forwarded-For: ' . $userip]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2');
@@ -136,6 +138,7 @@ class ODauth
 
         $ch = curl_init($this->product_link['url'] . '/?' . $query);
 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_HTTPGET, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->token, 'X-Forwarded-For: ' . $userip]);
         curl_setopt($ch, CURLOPT_USERAGENT, 'BC Libraries Coop Carousel v2');
