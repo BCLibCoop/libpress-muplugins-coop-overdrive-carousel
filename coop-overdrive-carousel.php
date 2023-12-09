@@ -18,7 +18,7 @@
  * @wordpress-plugin
  * Plugin Name:       Coop OverDrive Carousel Widget
  * Description:       Carousel of new titles on OverDrive
- * Version:           3.2.1
+ * Version:           3.2.2
  * Network:           true
  * Requires at least: 5.2
  * Requires PHP:      7.0
