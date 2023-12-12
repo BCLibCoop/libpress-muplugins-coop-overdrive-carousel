@@ -18,7 +18,7 @@
  * @wordpress-plugin
  * Plugin Name:       Coop OverDrive Carousel Widget
  * Description:       Carousel of new titles on OverDrive
- * Version:           3.2.2
+ * Version:           4.0.0
  * Network:           true
  * Requires at least: 5.2
  * Requires PHP:      7.0
@@ -31,16 +31,16 @@
 
 namespace BCLibCoop\OverdriveCarousel;
 
+defined('ABSPATH') || die(-1);
+
+define('COOP_OVERDRIVE_PLUGIN_FILE', __FILE__);
+
 /**
  * Require Composer autoloader if installed on it's own
  */
 if (file_exists($composer = __DIR__ . '/vendor/autoload.php')) {
     require_once $composer;
 }
-
-defined('ABSPATH') || die(-1);
-
-define('COOP_OVERDRIVE_PLUGIN_FILE', __FILE__);
 
 add_action('plugins_loaded', function () {
     new OverdriveCarousel();

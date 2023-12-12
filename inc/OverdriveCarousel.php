@@ -4,14 +4,16 @@ namespace BCLibCoop\OverdriveCarousel;
 
 use BCLibCoop\CoopHighlights\CoopHighlights;
 
+use function TenUp\AsyncTransients\get_async_transient;
+use function TenUp\AsyncTransients\set_async_transient;
+
 class OverdriveCarousel
 {
     public static $instance;
-    protected $odauth;
-    protected $config;
-    public $caturl;
+    public $config;
+    protected $all_configs = [];
 
-    private $transient_key = 'coop_overdrive';
+    public const TRANSIENT_KEY = 'coop_overdrive';
 
     private const FORMATS = [
         'ebook' => [
@@ -43,27 +45,32 @@ class OverdriveCarousel
 
         self::$instance = $this;
 
-        $this->config = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
+        $this->all_configs = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
+        $this->setConfig();
 
-        add_action('init', [&$this, 'init']);
-        add_action('widgets_init', [&$this, 'widgetsInit']);
+        add_filter('option_sidebars_widgets', [$this, 'legacySidebarConfig']);
+        add_filter('option_widget_carousel-overdrive', [$this, 'legacyWidgetInstance']);
 
-        add_filter('option_sidebars_widgets', [&$this, 'legacySidebarConfig']);
-        add_filter('option_widget_carousel-overdrive', [&$this, 'legacyWidgetInstance']);
+        add_shortcode('overdrive_carousel', [$this, 'odShortcode']);
+        add_action('widgets_init', [$this, 'widgetsInit']);
+        add_action('wp_enqueue_scripts', [$this, 'frontsideEnqueueStylesScripts']);
     }
 
-    public function init()
+    private function setConfig()
     {
-        try {
-            $this->odauth = new ODauth($this->config);
-            $this->caturl = $this->odauth->caturl;
-        } catch (\Exception $e) {
-            $this->odauth = null;
+        // Get province from library shortcode 1st letter
+        $shortcode = get_option('_coop_sitka_lib_shortname', '');
+
+        if (preg_match('%(^[A-Z]{1})%', $shortcode, $matches)) {
+            $shortcode_prov = $matches[1];
+
+            foreach ($this->all_configs as $province => $config) {
+                if ($shortcode_prov === $province[0]) {
+                    $this->config = $config;
+                    break;
+                }
+            }
         }
-
-        add_shortcode('overdrive_carousel', [&$this, 'odShortcode']);
-
-        add_action('wp_enqueue_scripts', [&$this, 'frontsideEnqueueStylesScripts']);
     }
 
     public function widgetsInit()
@@ -107,10 +114,17 @@ class OverdriveCarousel
         return $widget_settings;
     }
 
-    public function frontsideEnqueueStylesScripts()
+    private function shouldEnqueueAssets()
     {
         global $post;
 
+        return (!empty($post) && has_shortcode($post->post_content, 'overdrive_carousel'))
+            || (is_front_page() && has_shortcode(CoopHighlights::allHighlightsContent(), 'sitka_carousel'))
+            || is_active_widget(false, false, 'carousel-overdrive');
+    }
+
+    public function frontsideEnqueueStylesScripts()
+    {
         $suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
 
         /**
@@ -118,12 +132,7 @@ class OverdriveCarousel
          * only the first one actually enqued should be needed/registered.
          * Assuming we keep versions in sync, this shouldn't be an issue.
          */
-
-        if (
-            (!empty($post) && has_shortcode($post->post_content, 'overdrive_carousel'))
-            || (is_front_page() && has_shortcode(CoopHighlights::allHighlightsContent(), 'sitka_carousel'))
-            || is_active_widget(false, false, 'carousel-overdrive')
-        ) {
+        if ($this->shouldEnqueueAssets()) {
             /* flickity */
             wp_enqueue_script(
                 'flickity',
@@ -171,6 +180,9 @@ class OverdriveCarousel
         }
     }
 
+    /**
+     * Filter formats from the shortcode to only those we have defined as valid
+     */
     private function handleFormats($formats = '')
     {
         // Make sure we have a nice clean array of possible formats
@@ -194,25 +206,44 @@ class OverdriveCarousel
         return implode(',', $formats);
     }
 
+    /**
+     * Retrieve the list of most recent products/titles
+     *
+     * Not currently using async method, as there's not a straightforward way
+     * to have it save a network-wide transient
+     */
     public function getProducts($cover_count = 20, $formats = '')
     {
-        $products = [];
-
-        if (empty($this->odauth)) {
-            return $products;
-        }
-
         // Get only allowed formats
         $formats = $this->handleFormats($formats);
 
         // MD5 to keep our transients a fixed length
         $formats_key = md5($formats);
+        $transient_key = self::TRANSIENT_KEY . "_{$this->config['libID']}_$formats_key";
 
-        $products = get_site_transient("{$this->transient_key}_{$this->odauth->province}_$formats_key");
+        // $products = get_async_transient(
+        //     $transient_key,
+        //     [$this, 'realGetProductsAsync'],
+        //     [$transient_key, $cover_count, $formats]
+        // );
+        $products = $this->realGetProducts($transient_key, $cover_count, $formats);
 
-        if (empty($products)) {
-            // If the transient does not exist or is expired, refresh the data
-            $products = $this->odauth->getNewestN($cover_count, $formats);
+        return array_filter((array) $products);
+    }
+
+    /**
+     * Do the actual work of getting titles, checking for a cached transient
+     */
+    public function realGetProducts($transient_key, $cover_count, $formats)
+    {
+        $products = get_site_transient($transient_key);
+
+        if ($products === false) {
+            try {
+                $products = (new OverdriveAPI($this->config))->getNewestN($cover_count, $formats);
+            } catch (\Exception $e) {
+                $products = [];
+            }
 
             if (!empty($products)) {
                 // Just store the data we're going to use
@@ -225,15 +256,65 @@ class OverdriveCarousel
                     ];
                 }, $products);
 
-                set_site_transient(
-                    "{$this->transient_key}_{$this->odauth->province}_$formats_key",
-                    $products,
-                    DAY_IN_SECONDS
-                );
+                // If we get results, persist for 1 day
+                $transient_time = DAY_IN_SECONDS;
+            } else {
+                // Otherwise, cache an empty array for a minute so we don't hammer overdrive
+                $transient_time = MINUTE_IN_SECONDS;
+                $products = [];
             }
+
+            set_site_transient($transient_key, $products, $transient_time);
         }
 
-        return (array) $products;
+        return $products;
+    }
+
+    /**
+     * Version of above to be used with async transients, including locking
+     */
+    public function realGetProductsAsync($transient_key, $cover_count, $formats)
+    {
+        if (get_site_transient("{$transient_key}_lock")) {
+            return;
+        }
+
+        // Set a lock, 5 minutes max
+        set_site_transient("{$transient_key}_lock", true, MINUTE_IN_SECONDS * 5);
+
+        // Default to only persisting for 1 minute
+        $transient_time = MINUTE_IN_SECONDS;
+
+        try {
+            $products = (new OverdriveAPI($this->config))->getNewestN($cover_count, $formats);
+        } catch (\Exception $e) {
+            $products = [];
+        }
+
+        if (!empty($products)) {
+            // Just store the data we're going to use
+            $products = array_map(function ($product) {
+                return [
+                    'title' => $product['title'] ?? '',
+                    'author' => $product['primaryCreator']['name'] ?? '',
+                    'link' => $product['contentDetails'][0]['href'],
+                    'image' => $product['images']['cover150Wide']['href'],
+                ];
+            }, $products);
+
+            // If we get results, persist for 1 day
+            $transient_time = DAY_IN_SECONDS;
+        }
+
+        // Cache the results
+        set_async_transient(
+            $transient_key,
+            $products,
+            $transient_time
+        );
+
+        // Delete the lock once we have finished running
+        delete_transient("{$transient_key}_lock");
     }
 
     public function odShortcode($atts)
@@ -248,7 +329,11 @@ class OverdriveCarousel
             'formats' => '',
         ], $atts));
 
-        $products = $this->getProducts($cover_count, $formats);
+        if (!empty($this->config)) {
+            $products = $this->getProducts($cover_count, $formats);
+        } else {
+            $products = [];
+        }
 
         $flickity_options = [
             'autoPlay' => $dwell,

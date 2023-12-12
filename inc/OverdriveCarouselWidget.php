@@ -113,7 +113,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         echo sprintf(
             '%s<a href="%s">%s</a>%s',
             $before_title,
-            OverdriveCarousel::$instance->caturl,
+            OverdriveCarousel::$instance->config['caturl'],
             $heading,
             $after_title
         );
