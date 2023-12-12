@@ -70,7 +70,11 @@ class OverdriveAPI
             && $data = json_decode(wp_remote_retrieve_body($response))
         ) {
             $this->token = $data->access_token;
-            set_site_transient(OverdriveCarousel::TRANSIENT_KEY . "_{$this->config['libID']}_token", $this->token, (int) $data->expires_in);
+            set_site_transient(
+                OverdriveCarousel::TRANSIENT_KEY . "_{$this->config['libID']}_token",
+                $this->token,
+                (int) $data->expires_in
+            );
         } else {
             throw new \Exception("Could not get auth token");
         }
@@ -95,7 +99,12 @@ class OverdriveAPI
             && $data = json_decode(wp_remote_retrieve_body($response))
         ) {
             $this->library = $data;
-            set_site_transient(OverdriveCarousel::TRANSIENT_KEY . "_{$this->config['libID']}_library", $this->library, WEEK_IN_SECONDS);
+            // Hopefully this is safe to cache for a while?
+            set_site_transient(
+                OverdriveCarousel::TRANSIENT_KEY . "_{$this->config['libID']}_library",
+                $this->library,
+                WEEK_IN_SECONDS
+            );
         } else {
             throw new \Exception("Could not get library information");
         }
