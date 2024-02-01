@@ -155,28 +155,24 @@ class OverdriveCarousel
                 true
             );
 
-            wp_register_style(
+            wp_enqueue_style(
                 'flickity',
                 plugins_url('/assets/css/flickity' . $suffix . '.css', COOP_OVERDRIVE_PLUGIN_FILE),
                 [],
                 '2.3.0-accessible'
             );
 
-            wp_register_style(
-                'flickity-fade',
-                plugins_url('/assets/css/flickity-fade.css', COOP_OVERDRIVE_PLUGIN_FILE),
-                ['flickity'],
-                '1.0.0'
-            );
-
-            wp_enqueue_style(
-                'coop-overdrive',
-                plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
-                [
+            if (empty($GLOBALS['flickity_fade_enqueued'])) {
+                wp_add_inline_style(
                     'flickity',
-                    'flickity-fade'
-                ],
-                get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
+                    file_get_contents(dirname(COOP_SLIDESHOW_PLUGIN) . '/assets/css/flickity-fade.css')
+                );
+                $GLOBALS['flickity_fade_enqueued'] = true;
+            }
+
+            wp_add_inline_style(
+                'flickity',
+                file_get_contents(dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/overdrive.css')
             );
         }
     }
