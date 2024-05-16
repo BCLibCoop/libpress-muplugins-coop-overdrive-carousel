@@ -142,7 +142,7 @@ class OverdriveCarousel
                     'jquery',
                 ],
                 '2.3.0-accessible',
-                true
+                ['strategy' => 'defer']
             );
 
             wp_enqueue_script(
@@ -152,7 +152,7 @@ class OverdriveCarousel
                     'flickity',
                 ],
                 '1.0.0',
-                true
+                ['strategy' => 'defer']
             );
 
             wp_enqueue_style(
@@ -162,18 +162,29 @@ class OverdriveCarousel
                 '2.3.0-accessible'
             );
 
-            if (empty($GLOBALS['flickity_fade_enqueued'])) {
-                wp_add_inline_style(
-                    'flickity',
-                    file_get_contents(dirname(COOP_SLIDESHOW_PLUGIN) . '/assets/css/flickity-fade.css')
-                );
-                $GLOBALS['flickity_fade_enqueued'] = true;
-            }
-
-            wp_add_inline_style(
-                'flickity',
-                file_get_contents(dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/overdrive.css')
+            wp_enqueue_style(
+                'flickity-fade',
+                plugins_url('/assets/css/flickity-fade.css', COOP_OVERDRIVE_PLUGIN_FILE),
+                ['flickity'],
+                '1.0.0'
             );
+            /**
+             * Add support for native inlining
+             *
+             * @see wp_maybe_inline_styles()
+             */
+            wp_style_add_data('flickity-fade', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/flickity-fade.css');
+
+            wp_enqueue_style(
+                'coop-overdrive',
+                plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
+                [
+                    'flickity',
+                    'flickity-fade'
+                ],
+                get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
+            );
+            wp_style_add_data('coop-overdrive', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/overdrive.css');
         }
     }
 
