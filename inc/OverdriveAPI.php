@@ -110,7 +110,7 @@ class OverdriveAPI
         }
     }
 
-    public function getNewestN($n, $formats)
+    public function getNewestN($n, $formats = '')
     {
         $headers = [
             'Authorization' => "Bearer {$this->token}",
@@ -122,8 +122,14 @@ class OverdriveAPI
             'sort' => 'dateadded:desc',
         ];
 
+        // Limit formats to those supported by the library
+        $formats = explode(',', $formats);
+        $formats = array_filter($formats, function ($format) {
+            return in_array($format, array_column($this->library->formats, 'id'));
+        });
+
         if (!empty($formats)) {
-            $query_params['formats'] = $formats;
+            $query_params['formats'] = implode(',', $formats);
         }
 
         $response = wp_remote_get(
@@ -134,13 +140,12 @@ class OverdriveAPI
             ]
         );
 
-        if (
-            wp_remote_retrieve_response_code($response) === 200
-            && $data = json_decode(wp_remote_retrieve_body($response), true)
-        ) {
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (wp_remote_retrieve_response_code($response) === 200) {
             return isset($data['products']) ? $data['products'] : [];
         } else {
-            throw new \Exception("Could not get product information");
+            throw new \Exception("Could not get product information: " . $data['message'] ?? 'Unknown');
         }
     }
 }

@@ -14,12 +14,7 @@ class OverdriveCarousel
 
     private const FORMATS = [
         'ebook' => [
-            'ebook-kindle',
             'ebook-overdrive',
-            'ebook-epub-adobe',
-            'ebook-epub-open',
-            'ebook-pdf-adobe',
-            'ebook-pdf-open',
             'ebook-mediado',
         ],
         'magazine' => [
@@ -27,7 +22,6 @@ class OverdriveCarousel
         ],
         'audiobook' => [
             'audiobook-overdrive',
-            'audiobook-mp3',
         ],
         'video' => [
             'video-streaming',
