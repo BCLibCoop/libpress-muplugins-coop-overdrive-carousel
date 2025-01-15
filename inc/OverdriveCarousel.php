@@ -39,9 +39,6 @@ class OverdriveCarousel
         $this->all_configs = defined('OVERDRIVE_CONFIG') ? OVERDRIVE_CONFIG : [];
         $this->setConfig();
 
-        add_filter('option_sidebars_widgets', [$this, 'legacySidebarConfig']);
-        add_filter('option_widget_carousel-overdrive', [$this, 'legacyWidgetInstance']);
-
         add_shortcode('overdrive_carousel', [$this, 'odShortcode']);
         add_action('widgets_init', [$this, 'widgetsInit']);
         add_action('wp_enqueue_scripts', [$this, 'frontsideEnqueueStylesScripts']);
@@ -71,42 +68,6 @@ class OverdriveCarousel
     public function widgetsInit()
     {
         register_widget(OverdriveCarouselWidget::class);
-    }
-
-    /**
-     * Widget previously registered as a single widget, add an instance ID
-     * so they continue to function correctly
-     */
-    public function legacySidebarConfig($sidebars)
-    {
-        foreach ($sidebars as &$sidebar_widgets) {
-            if (is_array($sidebar_widgets)) {
-                foreach ($sidebar_widgets as &$widget) {
-                    if (
-                        in_array($widget, ['carousel-overdrive'])
-                        && !preg_match('/-\d$/', $widget)
-                    ) {
-                        $widget = $widget . '-1';
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $sidebars;
-    }
-
-    /**
-     * Widget previously registered as a single widget, add a setting for
-     * the first instance if one doesn't exist
-     */
-    public function legacyWidgetInstance($widget_settings)
-    {
-        if (!isset($widget_settings[1])) {
-            $widget_settings[1] = [];
-        }
-
-        return $widget_settings;
     }
 
     private function shouldEnqueueAssets()
