@@ -7,12 +7,12 @@ use BCLibCoop\CoopHighlights\CoopHighlights;
 class OverdriveCarousel
 {
     public static $instance;
-    public $config;
+    public $config = ['libID' => ''];
     protected $all_configs = [];
 
     public const TRANSIENT_KEY = 'coop_overdrive';
 
-    private const FORMATS = [
+    public const FORMATS = [
         'ebook' => [
             'ebook-overdrive',
             'ebook-mediado',
@@ -40,8 +40,9 @@ class OverdriveCarousel
         $this->setConfig();
 
         add_shortcode('overdrive_carousel', [$this, 'odShortcode']);
+
         add_action('widgets_init', [$this, 'widgetsInit']);
-        add_action('wp_enqueue_scripts', [$this, 'frontsideEnqueueStylesScripts']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueueShortcodeAssets']);
     }
 
     /**
@@ -75,8 +76,14 @@ class OverdriveCarousel
         global $post;
 
         return (!empty($post) && has_shortcode($post->post_content, 'overdrive_carousel'))
-            || (is_front_page() && has_shortcode(CoopHighlights::allHighlightsContent(), 'sitka_carousel'))
-            || is_active_widget(false, false, 'carousel-overdrive');
+            || (is_front_page() && has_shortcode(CoopHighlights::allHighlightsContent(), 'sitka_carousel'));
+    }
+
+    public function enqueueShortcodeAssets()
+    {
+        if ($this->shouldEnqueueAssets()) {
+            $this->frontsideEnqueueStylesScripts();
+        }
     }
 
     public function frontsideEnqueueStylesScripts()
@@ -88,59 +95,58 @@ class OverdriveCarousel
          * only the first one actually enqued should be needed/registered.
          * Assuming we keep versions in sync, this shouldn't be an issue.
          */
-        if ($this->shouldEnqueueAssets()) {
-            /* flickity */
-            wp_enqueue_script(
+
+        /* flickity */
+        wp_enqueue_script(
+            'flickity',
+            plugins_url('/assets/js/flickity.pkgd' . $suffix . '.js', COOP_OVERDRIVE_PLUGIN_FILE),
+            [
+                'jquery',
+            ],
+            '2.3.0-accessible',
+            ['strategy' => 'defer']
+        );
+
+        wp_enqueue_script(
+            'flickity-fade',
+            plugins_url('/assets/js/flickity-fade.js', COOP_OVERDRIVE_PLUGIN_FILE),
+            [
                 'flickity',
-                plugins_url('/assets/js/flickity.pkgd' . $suffix . '.js', COOP_OVERDRIVE_PLUGIN_FILE),
-                [
-                    'jquery',
-                ],
-                '2.3.0-accessible',
-                ['strategy' => 'defer']
-            );
+            ],
+            '1.0.0',
+            ['strategy' => 'defer']
+        );
 
-            wp_enqueue_script(
-                'flickity-fade',
-                plugins_url('/assets/js/flickity-fade.js', COOP_OVERDRIVE_PLUGIN_FILE),
-                [
-                    'flickity',
-                ],
-                '1.0.0',
-                ['strategy' => 'defer']
-            );
+        wp_enqueue_style(
+            'flickity',
+            plugins_url('/assets/css/flickity' . $suffix . '.css', COOP_OVERDRIVE_PLUGIN_FILE),
+            [],
+            '2.3.0-accessible'
+        );
 
-            wp_enqueue_style(
+        wp_enqueue_style(
+            'flickity-fade',
+            plugins_url('/assets/css/flickity-fade.css', COOP_OVERDRIVE_PLUGIN_FILE),
+            ['flickity'],
+            '1.0.0'
+        );
+        /**
+         * Add support for native inlining
+         *
+         * @see wp_maybe_inline_styles()
+         */
+        wp_style_add_data('flickity-fade', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/flickity-fade.css');
+
+        wp_enqueue_style(
+            'coop-overdrive',
+            plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
+            [
                 'flickity',
-                plugins_url('/assets/css/flickity' . $suffix . '.css', COOP_OVERDRIVE_PLUGIN_FILE),
-                [],
-                '2.3.0-accessible'
-            );
-
-            wp_enqueue_style(
-                'flickity-fade',
-                plugins_url('/assets/css/flickity-fade.css', COOP_OVERDRIVE_PLUGIN_FILE),
-                ['flickity'],
-                '1.0.0'
-            );
-            /**
-             * Add support for native inlining
-             *
-             * @see wp_maybe_inline_styles()
-             */
-            wp_style_add_data('flickity-fade', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/flickity-fade.css');
-
-            wp_enqueue_style(
-                'coop-overdrive',
-                plugins_url('/assets/css/overdrive.css', COOP_OVERDRIVE_PLUGIN_FILE),
-                [
-                    'flickity',
-                    'flickity-fade'
-                ],
-                get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
-            );
-            wp_style_add_data('coop-overdrive', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/overdrive.css');
-        }
+                'flickity-fade'
+            ],
+            get_plugin_data(COOP_OVERDRIVE_PLUGIN_FILE, false, false)['Version']
+        );
+        wp_style_add_data('coop-overdrive', 'path', dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/assets/css/overdrive.css');
     }
 
     /**
@@ -218,38 +224,36 @@ class OverdriveCarousel
         return array_filter((array) $products);
     }
 
-    public function odShortcode($atts)
+    public function odShortcode($atts = [])
     {
         // If there's an old saved dwell time that's too short, pad it out
         $dwell = (int) get_option('coop-od-dwell', '4000');
         $dwell += ($dwell < 1000) ? 2000 : 0;
 
-        extract(shortcode_atts([
-            'cover_count' => (int) get_option('coop-od-covers', '20'),
+        $atts = shortcode_atts([
+            'cover_count' => (int) get_option('coop-od-covers', 20),
             'dwell' => $dwell,
             'formats' => '',
-        ], $atts));
+        ], $atts);
 
-        $products = [];
+        return $this->render($atts);
+    }
 
-        if (!empty($this->config)) {
-            $products = $this->getProducts($cover_count, $formats);
-        }
+    public function render($atts)
+    {
+        $products = $this->getProducts($atts['cover_count'], $atts['formats']);
 
-        $flickity_options = [
-            'autoPlay' => $dwell,
+        $flickity_options = json_encode([
+            'autoPlay' => $atts['dwell'],
             'wrapAround' => true,
             'pageDots' => false,
             'fade' => true,
             'imagesLoaded' => true,
             'lazyLoad' => 2,
-        ];
-        $flickity_options = json_encode($flickity_options);
+        ]);
 
         ob_start();
-
         require dirname(COOP_OVERDRIVE_PLUGIN_FILE) . '/inc/views/shortcode.php';
-
         return ob_get_clean();
     }
 }

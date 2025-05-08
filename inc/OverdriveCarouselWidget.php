@@ -4,122 +4,120 @@ namespace BCLibCoop\OverdriveCarousel;
 
 class OverdriveCarouselWidget extends \WP_Widget
 {
+    /**
+     * Sets up a new OverDrive Carousel widget instance.
+     *
+     * @since 2.8.0
+     */
     public function __construct()
     {
         parent::__construct(
             'carousel-overdrive',
             'OverDrive Carousel',
+            [
+                'description' => 'Displays the selected OverDrive carousel',
+            ]
         );
     }
 
     /**
      * Display the settings form
      *
-     * @todo save and get instance variables
+     * @param array $instance Current settings.
      */
     public function form($instance)
     {
         $coop_od_title = get_option('coop-od-title', 'Fresh eBooks & audioBooks');
+        $coop_od_covers = get_option('coop-od-covers', 20);
+        $coop_od_dwell = get_option('coop-od-dwell', 4000);
 
-        if (array_key_exists('coop-od-title', $_POST)) {
-            $coop_od_title_new = sanitize_text_field($_POST['coop-od-title']);
+        $title = isset($instance['title']) ? esc_attr($instance['title']) : $coop_od_title;
+        $number = isset($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
+        $dwell = isset($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
+        ?>
+        <p>
+            <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
+            <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
+        </p>
 
-            if ($coop_od_title != $coop_od_title_new) {
-                $coop_od_title = $coop_od_title_new;
-                update_option('coop-od-title', $coop_od_title);
-            }
-        }
+        <p class="description">If set, will link to the OverDrive Homepage</p>
 
-        $coop_od_covers = get_option('coop-od-covers', '20');
+        <p>
+            <label for="<?php echo $this->get_field_id('cover_count'); ?>"><?php _e('Number of covers to show:'); ?></label>
+            <input class="tiny-text" id="<?php echo $this->get_field_id('cover_count'); ?>" name="<?php echo $this->get_field_name('cover_count'); ?>" type="number" step="1" min="1" value="<?php echo $number; ?>" size="3" />
+        </p>
 
-        if (array_key_exists('coop-od-covers', $_POST)) {
-            $coop_od_covers_new = sanitize_text_field($_POST['coop-od-covers']);
-
-            if ($coop_od_covers != $coop_od_covers_new) {
-                $coop_od_covers = $coop_od_covers_new;
-                update_option('coop-od-covers', $coop_od_covers);
-            }
-        }
-
-
-        $coop_od_dwell = get_option('coop-od-dwell', '4000');
-
-        if (array_key_exists('coop-od-dwell', $_POST)) {
-            $coop_od_dwell_new = sanitize_text_field($_POST['coop-od-dwell']);
-
-            if ($coop_od_dwell != $coop_od_dwell_new) {
-                $coop_od_dwell = $coop_od_dwell_new;
-                update_option('coop-od-dwell', $coop_od_dwell);
-            }
-        }
-
-        $out = [];
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-title">Heading:</label>';
-        $out[] = '<input id="coop-od-title" type="text" value="' . $coop_od_title . '" name="coop-od-title">';
-        $out[] = '</p>';
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-covers">Number of covers:</label>';
-        $out[] = '<input id="coop-od-covers" type="text" value="' . $coop_od_covers . '" name="coop-od-covers">';
-        $out[] = '</p>';
-
-        $out[] = '<p>';
-        $out[] = '<label for="coop-od-dwell">Dwell time (ms):</label>';
-        $out[] = '<input id="coop-od-dwell" type="text" value="' . $coop_od_dwell . '" name="coop-od-dwell">';
-        $out[] = '</p>';
-
-        echo implode("\n", $out);
+        <p>
+            <label for="<?php echo $this->get_field_id('dwell'); ?>"><?php _e('Dwell time (ms):'); ?></label>
+            <input class="tiny-text" id="<?php echo $this->get_field_id('dwell'); ?>" name="<?php echo $this->get_field_name('dwell'); ?>" type="number" step="1" min="1" value="<?php echo $dwell; ?>" size="5" />
+        </p>
+        <?php
     }
 
+    /**
+     * Updates instance settings
+     *
+     * @param array $new_instance New settings for this instance as input by the user via
+     *                            WP_Widget::form().
+     * @param array $old_instance Old settings for this instance.
+     * @return array Updated settings to save.
+     */
+    public function update($new_instance, $old_instance)
+    {
+        $instance              = $old_instance;
+        $instance['title']     = sanitize_text_field($new_instance['title']);
+        $instance['cover_count']    = (int) $new_instance['cover_count'];
+        $instance['dwell']     = (int) $new_instance['dwell'];
+
+        return $instance;
+    }
+
+    /**
+     * Outputs the widget
+     *
+     * @param array $args     Display arguments including 'before_title', 'after_title',
+     *                        'before_widget', and 'after_widget'.
+     * @param array $instance Settings for the current Recent Posts widget instance.
+     */
     public function widget($args, $instance)
     {
-        // If there's an old saved dwell time that's too short, pad it out
-        $dwell = (int) get_option('coop-od-dwell', '4000');
-        $dwell += ($dwell < 1000) ? 2000 : 0;
+        OverdriveCarousel::$instance->frontsideEnqueueStylesScripts();
 
-        extract(shortcode_atts([
-            'heading' => get_option('coop-od-title', 'Fresh eBooks/Audio'),
-            'cover_count' => (int) get_option('coop-od-covers', '20'),
-            'dwell' => $dwell,
-            'formats' => '',
-        ], $instance));
+        $coop_od_covers = absint(get_option('coop-od-covers', 20));
+        $coop_od_dwell = absint(get_option('coop-od-dwell', 4000));
 
-        $products = OverdriveCarousel::$instance->getProducts($cover_count, $formats);
+        $title = (! empty($instance['title'])) ? $instance['title'] : '';
+        $instance['cover_count'] = (! empty($instance['cover_count'])) ? absint($instance['cover_count']) : $coop_od_covers;
+        $instance['dwell'] = (! empty($instance['dwell'])) ? absint($instance['dwell']) : $coop_od_dwell;
+        $instance['formats'] = '';
 
-        $flickity_options = [
-            'autoPlay' => $dwell,
-            'wrapAround' => true,
-            'pageDots' => false,
-            'fade' => true,
-            'imagesLoaded' => true,
-            'lazyLoad' => 2,
-        ];
-        $flickity_options = json_encode($flickity_options);
+        // Output widget
 
-        extract($args);
-        /*  widget-declaration:
-            id
-            name
-            before_widget
-            after_widget
-            before_title
-            after_title
-        */
+        echo $args['before_widget'];
 
-        echo $before_widget;
+        if (!empty($title)) {
+            echo sprintf(
+                '%s<a href="%s">%s</a>%s',
+                $args['before_title'],
+                OverdriveCarousel::$instance->config['caturl'],
+                $title,
+                $args['after_title']
+            );
+        }
 
-        echo sprintf(
-            '%s<a href="%s">%s</a>%s',
-            $before_title,
-            OverdriveCarousel::$instance->config['caturl'],
-            $heading,
-            $after_title
-        );
+        $widget = OverdriveCarousel::$instance->render($instance);
+        echo $widget;
 
-        require 'views/shortcode.php';
 
-        echo $after_widget;
+        if ($this->is_block_preview() && strpos($widget, '<!-- Could not find') !== false) {
+            echo '<code>Unable to find any slides, please check the carousel settings.</code>';
+        }
+
+        echo $args['after_widget'];
+    }
+
+    private function is_block_preview()
+    {
+        return (defined('IFRAME_REQUEST') && IFRAME_REQUEST && !empty($_GET['legacy-widget-preview'])) || wp_is_rest_endpoint();
     }
 }

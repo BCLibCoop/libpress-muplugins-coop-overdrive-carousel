@@ -12,7 +12,7 @@
  * @author            Jon Whipple <jon.whipple@roaringsky.ca>
  * @author            Jonathan Schatz <jonathan.schatz@bc.libraries.coop>
  * @author            Sam Edwards <sam.edwards@bc.libraries.coop>
- * @copyright         2013-2022 BC Libraries Cooperative
+ * @copyright         BC Libraries Cooperative
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
