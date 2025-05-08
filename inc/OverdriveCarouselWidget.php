@@ -32,8 +32,11 @@ class OverdriveCarouselWidget extends \WP_Widget
         $coop_od_dwell = get_option('coop-od-dwell', 4000);
 
         $title = isset($instance['title']) ? esc_attr($instance['title']) : $coop_od_title;
+        $formats = isset($instance['formats']) ? absint($instance['formats']) : 'all';
         $number = isset($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
         $dwell = isset($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
+
+        $format_options = array_merge(['all'], array_keys(OverdriveCarousel::FORMATS));
         ?>
         <p>
             <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
@@ -41,6 +44,17 @@ class OverdriveCarouselWidget extends \WP_Widget
         </p>
 
         <p class="description">If set, will link to the OverDrive Homepage</p>
+
+        <p>
+            <label for="<?= $this->get_field_id('formats'); ?>"><?php _e('Format to display:'); ?></label>
+            <select class="widefat" id="<?= $this->get_field_id('formats'); ?>" name="<?= $this->get_field_name('formats'); ?>">
+                <?php foreach ($format_options as $format_option) : ?>
+                    <option value="<?= esc_attr($format_option); ?>" <?php selected($formats, $format_option); ?>>
+                        <?= esc_html(ucwords($format_option)); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </p>
 
         <p>
             <label for="<?php echo $this->get_field_id('cover_count'); ?>"><?php _e('Number of covers to show:'); ?></label>
@@ -64,10 +78,11 @@ class OverdriveCarouselWidget extends \WP_Widget
      */
     public function update($new_instance, $old_instance)
     {
-        $instance              = $old_instance;
-        $instance['title']     = sanitize_text_field($new_instance['title']);
-        $instance['cover_count']    = (int) $new_instance['cover_count'];
-        $instance['dwell']     = (int) $new_instance['dwell'];
+        $instance = $old_instance;
+        $instance['title'] = sanitize_text_field($new_instance['title']);
+        $instance['cover_count'] = (int) $new_instance['cover_count'];
+        $instance['dwell'] = (int) $new_instance['dwell'];
+        $instance['formats'] = sanitize_text_field($new_instance['formats']);
 
         return $instance;
     }
@@ -86,10 +101,10 @@ class OverdriveCarouselWidget extends \WP_Widget
         $coop_od_covers = absint(get_option('coop-od-covers', 20));
         $coop_od_dwell = absint(get_option('coop-od-dwell', 4000));
 
-        $title = (! empty($instance['title'])) ? $instance['title'] : '';
-        $instance['cover_count'] = (! empty($instance['cover_count'])) ? absint($instance['cover_count']) : $coop_od_covers;
-        $instance['dwell'] = (! empty($instance['dwell'])) ? absint($instance['dwell']) : $coop_od_dwell;
-        $instance['formats'] = '';
+        $title = ! empty($instance['title']) ? $instance['title'] : '';
+        $instance['cover_count'] = ! empty($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
+        $instance['dwell'] = ! empty($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
+        $instance['formats'] = ! empty($instance['formats']) ? $instance['formats'] : '';
 
         // Output widget
 

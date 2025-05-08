@@ -155,8 +155,10 @@ class OverdriveCarousel
     private function handleFormats($formats = '')
     {
         // Make sure we have a nice clean array of possible formats
-        $formats = explode(',', $formats);
-        $formats = array_filter(array_filter($formats, 'trim'));
+        if (!is_array($formats)) {
+            $formats = explode(',', $formats);
+            $formats = array_filter(array_filter($formats, 'trim'));
+        }
 
         // Expand our meta-formats
         foreach ($formats as $id => $format) {
