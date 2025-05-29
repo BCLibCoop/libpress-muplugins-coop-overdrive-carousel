@@ -248,13 +248,14 @@ class OverdriveCarousel
     public function render($atts)
     {
         $products = $this->getProducts($atts['cover_count'], $atts['formats']);
+        $atts['transition'] = $atts['transition'] ?? 'fade';
 
         $flickity_options = json_encode([
             'autoPlay' => $atts['dwell'],
             'wrapAround' => true,
             'pageDots' => false,
-            'groupCells' => true,
-            'fade' => true,
+            'groupCells' => ($atts['transition'] !== 'swipe'),
+            'fade' => ($atts['transition'] !== 'swipe'),
         ]);
 
         ob_start();

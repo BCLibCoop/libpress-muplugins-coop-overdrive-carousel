@@ -40,6 +40,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         $formats = isset($instance['formats']) ? absint($instance['formats']) : 'all';
         $number = isset($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
         $dwell = isset($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
+        $transition = isset($instance['transition']) ? esc_attr($instance['transition']) : 'fade';
 
         $format_options = array_merge(['all'], array_keys(OverdriveCarousel::FORMATS));
         ?>
@@ -70,6 +71,18 @@ class OverdriveCarouselWidget extends \WP_Widget
             <label for="<?php echo $this->get_field_id('dwell'); ?>"><?php _e('Dwell time (ms):'); ?></label>
             <input class="tiny-text" id="<?php echo $this->get_field_id('dwell'); ?>" name="<?php echo $this->get_field_name('dwell'); ?>" type="number" step="1" min="1" value="<?php echo $dwell; ?>" size="5" />
         </p>
+
+        <p>
+            <label for="<?= $this->get_field_id('transition'); ?>"><?php _e('Carousel Transition Style:'); ?></label>
+            <select class="widefat" id="<?= $this->get_field_id('transition'); ?>" name="<?= $this->get_field_name('transition'); ?>">
+                <option value="0"><?php _e('&mdash; Select &mdash;'); ?></option>
+                <?php foreach (['fade', 'swipe'] as $transition_option) : ?>
+                    <option value="<?= esc_attr($transition_option); ?>" <?php selected($transition, $transition_option); ?>>
+                        <?= esc_html(ucwords($transition_option)); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </p>
         <?php
     }
 
@@ -88,6 +101,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         $instance['cover_count'] = (int) $new_instance['cover_count'];
         $instance['dwell'] = (int) $new_instance['dwell'];
         $instance['formats'] = sanitize_text_field($new_instance['formats']);
+        $instance['transition'] = sanitize_text_field($new_instance['transition'] ?? '');
 
         return $instance;
     }
@@ -110,6 +124,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         $instance['cover_count'] = ! empty($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
         $instance['dwell'] = ! empty($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
         $instance['formats'] = ! empty($instance['formats']) ? $instance['formats'] : '';
+        $instance['transition'] = ! empty($instance['transition']) ? esc_attr($instance['transition']) : 'fade';
 
         // Output widget
 
