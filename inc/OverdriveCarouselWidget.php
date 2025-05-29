@@ -34,7 +34,7 @@ class OverdriveCarouselWidget extends \WP_Widget
     {
         $coop_od_title = get_option('coop-od-title', 'Fresh eBooks & audioBooks');
         $coop_od_covers = get_option('coop-od-covers', 20);
-        $coop_od_dwell = get_option('coop-od-dwell', 4000);
+        $coop_od_dwell = 4000;
 
         $title = isset($instance['title']) ? esc_attr($instance['title']) : $coop_od_title;
         $formats = isset($instance['formats']) ? absint($instance['formats']) : 'all';
@@ -104,7 +104,7 @@ class OverdriveCarouselWidget extends \WP_Widget
         OverdriveCarousel::$instance->frontsideEnqueueStylesScripts();
 
         $coop_od_covers = absint(get_option('coop-od-covers', 20));
-        $coop_od_dwell = absint(get_option('coop-od-dwell', 4000));
+        $coop_od_dwell = 4000;
 
         $title = ! empty($instance['title']) ? $instance['title'] : '';
         $instance['cover_count'] = ! empty($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
