@@ -232,11 +232,15 @@ class OverdriveCarousel
         $dwell = (int) get_option('coop-od-dwell', '4000');
         $dwell += ($dwell < 1000) ? 2000 : 0;
 
-        $atts = shortcode_atts([
-            'cover_count' => (int) get_option('coop-od-covers', 20),
-            'dwell' => $dwell,
-            'formats' => '',
-        ], $atts);
+        $atts = shortcode_atts(
+            [
+                'cover_count' => (int) get_option('coop-od-covers', 20),
+                'dwell' => $dwell,
+                'formats' => '',
+            ],
+            array_change_key_case((array) $atts, CASE_LOWER),
+            'overdrive_carousel'
+        );
 
         return $this->render($atts);
     }
@@ -249,9 +253,8 @@ class OverdriveCarousel
             'autoPlay' => $atts['dwell'],
             'wrapAround' => true,
             'pageDots' => false,
+            'groupCells' => true,
             'fade' => true,
-            'imagesLoaded' => true,
-            'lazyLoad' => 2,
         ]);
 
         ob_start();

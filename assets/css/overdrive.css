@@ -8,10 +8,7 @@
   display: none;
 }
 
-.overdrive-carousel .carousel-item:first-child {
-  display: block;
-}
-
+.overdrive-carousel .carousel-item:first-child,
 .overdrive-carousel.flickity-enabled .carousel-item {
   display: block;
 }
@@ -29,8 +26,7 @@
 }
 
 .overdrive-carousel .carousel-item {
-  margin: 0 auto;
-  width: 100%;
+  margin-right: 5%;
 }
 
 .overdrive-carousel .carousel-item .carousel-item-cover {
@@ -39,15 +35,18 @@
   display: inline-block;
 }
 
+.overdrive-carousel .carousel-item .carousel-item-image {
+}
+
 .overdrive-carousel .carousel-item .carousel-item-info {
   line-height: 1em;
 }
 
-.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-title,
-.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+.overdrive-carousel .carousel-item .carousel-item-info .carousel-item-title{
   font-size: 0.8em;
 }
 
 .overdrive-carousel .carousel-item .carousel-item-info .carousel-item-author {
+  font-size: 0.7em;
   font-style: italic;
 }

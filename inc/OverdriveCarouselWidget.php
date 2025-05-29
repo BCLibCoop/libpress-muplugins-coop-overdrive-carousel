@@ -20,6 +20,11 @@ class OverdriveCarouselWidget extends \WP_Widget
         );
     }
 
+    private function is_block_preview()
+    {
+        return (defined('IFRAME_REQUEST') && IFRAME_REQUEST && !empty($_GET['legacy-widget-preview'])) || wp_is_rest_endpoint();
+    }
+
     /**
      * Display the settings form
      *
@@ -121,18 +126,13 @@ class OverdriveCarouselWidget extends \WP_Widget
         }
 
         $widget = OverdriveCarousel::$instance->render($instance);
-        echo $widget;
 
+        echo $widget;
 
         if ($this->is_block_preview() && strpos($widget, '<!-- Could not find') !== false) {
             echo '<code>Unable to find any slides, please check the carousel settings.</code>';
         }
 
         echo $args['after_widget'];
-    }
-
-    private function is_block_preview()
-    {
-        return (defined('IFRAME_REQUEST') && IFRAME_REQUEST && !empty($_GET['legacy-widget-preview'])) || wp_is_rest_endpoint();
     }
 }
