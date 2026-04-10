@@ -20,9 +20,11 @@ class OverdriveCarouselWidget extends \WP_Widget
         );
     }
 
-    private function is_block_preview()
+    private function is_block_preview() // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     {
-        return (defined('IFRAME_REQUEST') && IFRAME_REQUEST && !empty($_GET['legacy-widget-preview'])) || wp_is_rest_endpoint();
+        return (
+            defined('IFRAME_REQUEST') && IFRAME_REQUEST && !empty($_GET['legacy-widget-preview'])
+        ) || wp_is_rest_endpoint();
     }
 
     /**
@@ -36,17 +38,17 @@ class OverdriveCarouselWidget extends \WP_Widget
         $coop_od_covers = get_option('coop-od-covers', 20);
         $coop_od_dwell = 4000;
 
-        $title = isset($instance['title']) ? esc_attr($instance['title']) : $coop_od_title;
-        $formats = isset($instance['formats']) ? absint($instance['formats']) : 'all';
-        $number = isset($instance['cover_count']) ? absint($instance['cover_count']) : $coop_od_covers;
-        $dwell = isset($instance['dwell']) ? absint($instance['dwell']) : $coop_od_dwell;
-        $transition = isset($instance['transition']) ? esc_attr($instance['transition']) : 'fade';
+        $title = esc_attr(isset($instance['title']) ? $instance['title'] : $coop_od_title);
+        $formats = sanitize_text_field(isset($instance['formats']) ? $instance['formats'] : 'all');
+        $number = absint(isset($instance['cover_count']) ? $instance['cover_count'] : $coop_od_covers);
+        $dwell = absint(isset($instance['dwell']) ? $instance['dwell'] : $coop_od_dwell);
+        $transition = esc_attr(isset($instance['transition']) ? $instance['transition'] : 'fade');
 
         $format_options = array_merge(['all'], array_keys(OverdriveCarousel::FORMATS));
         ?>
         <p>
-            <label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
-            <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
+            <label for="<?= $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
+            <input class="widefat" id="<?= $this->get_field_id('title'); ?>" name="<?= $this->get_field_name('title'); ?>" type="text" value="<?= $title; ?>" />
         </p>
 
         <p class="description">If set, will link to the OverDrive Homepage</p>
@@ -63,13 +65,13 @@ class OverdriveCarouselWidget extends \WP_Widget
         </p>
 
         <p>
-            <label for="<?php echo $this->get_field_id('cover_count'); ?>"><?php _e('Number of covers to show:'); ?></label>
-            <input class="tiny-text" id="<?php echo $this->get_field_id('cover_count'); ?>" name="<?php echo $this->get_field_name('cover_count'); ?>" type="number" step="1" min="1" value="<?php echo $number; ?>" size="3" />
+            <label for="<?= $this->get_field_id('cover_count'); ?>"><?php _e('Number of covers to show:'); ?></label>
+            <input class="tiny-text" id="<?= $this->get_field_id('cover_count'); ?>" name="<?= $this->get_field_name('cover_count'); ?>" type="number" step="1" min="1" value="<?= $number; ?>" size="3" />
         </p>
 
         <p>
-            <label for="<?php echo $this->get_field_id('dwell'); ?>"><?php _e('Dwell time (ms):'); ?></label>
-            <input class="tiny-text" id="<?php echo $this->get_field_id('dwell'); ?>" name="<?php echo $this->get_field_name('dwell'); ?>" type="number" step="1" min="1" value="<?php echo $dwell; ?>" size="5" />
+            <label for="<?= $this->get_field_id('dwell'); ?>"><?php _e('Dwell time (ms):'); ?></label>
+            <input class="tiny-text" id="<?= $this->get_field_id('dwell'); ?>" name="<?= $this->get_field_name('dwell'); ?>" type="number" step="1" min="1" value="<?= $dwell; ?>" size="5" />
         </p>
 
         <p>

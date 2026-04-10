@@ -1,3 +1,4 @@
+<?php defined('ABSPATH') || die(1); ?>
 <div class="overdrive-carousel-container">
     <?php if (!empty($products)) : ?>
         <div class="overdrive-carousel" data-flickity='<?= $flickity_options ?>'>
@@ -5,7 +6,8 @@
                 <div class="carousel-item">
                     <a href="<?= esc_url($product['link']) ?>">
                         <div class="carousel-item-cover">
-                            <img alt="" src="<?= $product['image'] ?>" width="150" class="carousel-item-image" decoding="async" <?= $index == 0 ? '' : 'loading="lazy"' ?>>
+                            <img alt="" src="<?= esc_url($product['image']) ?>" width="150" class="carousel-item-image"
+                            decoding="async" <?= $index == 0 ? '' : 'loading="lazy"' ?>>
                         </div>
                         <div class="carousel-item-info">
                             <span class="carousel-item-title"><?= esc_html($product['title']) ?></span>
